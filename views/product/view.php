@@ -7,6 +7,7 @@
 use yii\helpers\Html;
 use yii\helpers\Url;
 use app\models\Configuration;
+use app\helpers\PriceHelper;
 
 $this->title = $model->name;
 
@@ -88,7 +89,21 @@ $mainImage = !empty($allImages) ? $allImages[0] : ($model->imageUrl ?? '');
                     </a>
                 </p>
             <?php endif; ?>
-            <div class="product-price-detail"><?= Html::encode($model->formattedPrice) ?></div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <span style="font-size: 0.875rem; color: var(--md-sys-color-on-surface-variant); display: block; margin-bottom: 0.25rem;">Precio</span>
+                    <div class="product-price-detail" style="margin: 0; font-size: 1.75rem; font-weight: 500;"><?= Html::encode($model->formattedPrice) ?></div>
+                </div>
+                <?php 
+                $dollarPrice = PriceHelper::formatDollars($model->price);
+                if ($dollarPrice): 
+                ?>
+                    <div style="text-align: right;">
+                        <span style="font-size: 0.75rem; color: var(--md-sys-color-on-surface-variant); display: block; margin-bottom: 0.25rem;">Precio aprox en dólares</span>
+                        <div style="font-size: 1.25rem; color: var(--md-sys-color-on-surface-variant);"><?= Html::encode($dollarPrice) ?></div>
+                    </div>
+                <?php endif; ?>
+            </div>
             
             <?php if ($model->description): ?>
                 <div class="product-description">
@@ -103,9 +118,9 @@ $mainImage = !empty($allImages) ? $allImages[0] : ($model->imageUrl ?? '');
                     </svg>
                     Contactar por WhatsApp
                 </a>
-                <button type="button" class="quote-button" onclick="document.getElementById('quoteModal').style.display='block'">
+                <button type="button" class="quote-button" onclick="addProductToQuotation(<?= $model->id ?>)">
                     <span class="material-icons" style="margin-right: 8px; vertical-align: middle;">request_quote</span>
-                    Solicitar Cotización
+                    Agregar a Cotización
                 </button>
             </div>
         </div>
@@ -126,7 +141,21 @@ $mainImage = !empty($allImages) ? $allImages[0] : ($model->imageUrl ?? '');
                 <?php endif; ?>
                 <div class="product-info">
                     <h3 class="product-name"><?= Html::encode($product->name) ?></h3>
-                    <div class="product-price"><?= Html::encode($product->formattedPrice) ?></div>
+                    <?php 
+                    $dollarPriceRelated = PriceHelper::formatDollars($product->price);
+                    ?>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 0.5rem;">
+                        <div>
+                            <span style="font-size: 0.75rem; color: var(--md-sys-color-on-surface-variant); display: block; margin-bottom: 0.25rem;">Precio</span>
+                            <div class="product-price" style="margin: 0; font-size: 1.125rem; font-weight: 500;"><?= Html::encode($product->formattedPrice) ?></div>
+                        </div>
+                        <?php if ($dollarPriceRelated): ?>
+                            <div style="text-align: right;">
+                                <span style="font-size: 0.625rem; color: var(--md-sys-color-on-surface-variant); display: block; margin-bottom: 0.25rem;">Precio aprox en dólares</span>
+                                <div style="font-size: 0.875rem; color: var(--md-sys-color-on-surface-variant);"><?= Html::encode($dollarPriceRelated) ?></div>
+                            </div>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </a>
             <?php endforeach; ?>
@@ -518,48 +547,54 @@ document.addEventListener('keydown', function(event) {
     }
 });
 
-function submitQuote(event, productId) {
-    event.preventDefault();
-    
-    const form = document.getElementById('quoteForm');
-    const formData = new FormData(form);
-    const messageDiv = document.getElementById('quoteFormMessage');
-    
-    messageDiv.style.display = 'none';
-    
-    fetch('/product/request-quote?id=' + productId, {
+function addProductToQuotation(productId) {
+    fetch('/quotation/add-to-cart', {
         method: 'POST',
-        body: formData
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRF-Token': document.querySelector('meta[name=csrf-token]').content
+        },
+        body: 'product_id=' + productId + '&quantity=1'
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            messageDiv.style.display = 'block';
-            messageDiv.style.backgroundColor = '#d4edda';
-            messageDiv.style.color = '#155724';
-            messageDiv.style.border = '1px solid #c3e6cb';
-            messageDiv.textContent = data.message;
-            form.reset();
-            
-            setTimeout(function() {
-                document.getElementById('quoteModal').style.display = 'none';
-                messageDiv.style.display = 'none';
-            }, 2000);
+            // Show success message
+            alert('Producto agregado al carrito de cotización exitosamente.');
         } else {
-            messageDiv.style.display = 'block';
-            messageDiv.style.backgroundColor = '#f8d7da';
-            messageDiv.style.color = '#721c24';
-            messageDiv.style.border = '1px solid #f5c6cb';
-            messageDiv.textContent = data.message || 'Error al enviar la solicitud. Por favor, intente nuevamente.';
+            alert(data.message || 'Error al agregar producto al carrito.');
         }
     })
     .catch(error => {
-        messageDiv.style.display = 'block';
-        messageDiv.style.backgroundColor = '#f8d7da';
-        messageDiv.style.color = '#721c24';
-        messageDiv.style.border = '1px solid #f5c6cb';
-        messageDiv.textContent = 'Error al enviar la solicitud. Por favor, intente nuevamente.';
         console.error('Error:', error);
+        alert('Error al agregar producto al carrito. Por favor, intente nuevamente.');
+    });
+}
+
+function submitQuote(event, productId) {
+    event.preventDefault();
+    
+    // Add product to cart and redirect to quotation page
+    fetch('/quotation/add-to-cart', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRF-Token': document.querySelector('meta[name=csrf-token]').content
+        },
+        body: 'product_id=' + productId + '&quantity=1'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Redirect to quotation page
+            window.location.href = '/quotation';
+        } else {
+            alert(data.message || 'Error al agregar producto al carrito. Por favor, intente nuevamente.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al agregar producto al carrito. Por favor, intente nuevamente.');
     });
 }
 

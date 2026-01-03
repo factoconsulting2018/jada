@@ -4,7 +4,6 @@ namespace app\modules\admin\controllers;
 
 use Yii;
 use app\models\Page;
-use app\models\PageSearch;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
@@ -35,11 +34,28 @@ class PageController extends Controller
      */
     public function actionIndex()
     {
-        $searchModel = new PageSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $searchQuery = Yii::$app->request->get('search', '');
+        
+        $query = Page::find();
+        
+        if (!empty($searchQuery)) {
+            $query->andWhere(['or',
+                ['like', 'title', $searchQuery],
+                ['like', 'slug', $searchQuery],
+            ]);
+        }
+        
+        $dataProvider = new \yii\data\ActiveDataProvider([
+            'query' => $query,
+            'sort' => [
+                'defaultOrder' => ['menu_order' => SORT_ASC, 'title' => SORT_ASC],
+            ],
+            'pagination' => [
+                'pageSize' => 20,
+            ],
+        ]);
 
         return $this->render('index', [
-            'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
         ]);
     }

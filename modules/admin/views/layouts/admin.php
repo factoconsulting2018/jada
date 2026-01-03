@@ -56,6 +56,9 @@ $this->registerMetaTag(['name' => 'keywords', 'content' => $this->params['meta_k
                 <li><a href="<?= \yii\helpers\Url::to(['/admin/page']) ?>" class="nav-link">
                     <span class="material-icons">description</span> Páginas
                 </a></li>
+                <li><a href="<?= \yii\helpers\Url::to(['/admin/footer-menu']) ?>" class="nav-link">
+                    <span class="material-icons">menu</span> Menú Footer
+                </a></li>
                 <li><a href="<?= \yii\helpers\Url::to(['/admin/configuration']) ?>" class="nav-link">
                     <span class="material-icons">build</span> Configuración
                 </a></li>

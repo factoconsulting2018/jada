@@ -50,6 +50,30 @@ $this->params['breadcrumbs'][] = $this->title;
                 'updated_at:datetime',
             ],
         ]) ?>
+
+        <div style="margin-top: 2rem; padding: 1.5rem; background: #f5f5f5; border-radius: 8px;">
+            <h3 style="margin-top: 0;">Menú del Footer</h3>
+            <?php
+            $footerItems = $model->footerMenuItems;
+            if (!empty($footerItems)):
+            ?>
+                <p>Esta página está presente en el menú del footer:</p>
+                <ul>
+                    <?php foreach ($footerItems as $item): ?>
+                        <li>
+                            <?= Html::encode($item->getPositionLabel()) ?> - 
+                            <?= Html::a('Ver/Editar', ['/admin/footer-menu/update', 'id' => $item->id], ['class' => 'btn btn-sm btn-secondary']) ?>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php else: ?>
+                <p>Esta página no está en el menú del footer.</p>
+            <?php endif; ?>
+            
+            <div style="margin-top: 1rem;">
+                <?= Html::a('Agregar al Menú del Footer', ['/admin/footer-menu/create', 'page_id' => $model->id], ['class' => 'btn btn-primary']) ?>
+            </div>
+        </div>
     </div>
 </div>
 

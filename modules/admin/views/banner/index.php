@@ -26,7 +26,21 @@ $this->params['breadcrumbs'][] = $this->title;
                     'format' => 'html',
                     'value' => function ($model) {
                         if ($model->image) {
-                            return Html::img($model->imageUrl, ['style' => 'width: 100px; height: 60px; object-fit: cover; border-radius: 4px;']);
+                            $imagePath = Yii::getAlias('@webroot') . $model->image;
+                            $imageHtml = Html::img($model->imageUrl, ['style' => 'width: 100px; height: 60px; object-fit: cover; border-radius: 4px;']);
+                            
+                            // Get image dimensions
+                            $sizeInfo = '';
+                            if (file_exists($imagePath)) {
+                                $imageSize = getimagesize($imagePath);
+                                if ($imageSize !== false) {
+                                    $width = $imageSize[0];
+                                    $height = $imageSize[1];
+                                    $sizeInfo = '<div style="font-size: 0.75rem; color: #666; margin-top: 0.25rem; text-align: center;">' . $width . ' × ' . $height . ' px</div>';
+                                }
+                            }
+                            
+                            return $imageHtml . $sizeInfo;
                         }
                         return '';
                     },

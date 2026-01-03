@@ -20,6 +20,7 @@ class AppAsset extends AssetBundle
     public $js = [
         'https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js',
         'js/site.js',
+        'js/header-search.js',
     ];
     public $depends = [
         'yii\web\YiiAsset',

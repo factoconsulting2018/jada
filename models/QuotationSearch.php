@@ -18,7 +18,7 @@ class QuotationSearch extends Quotation
     public function rules()
     {
         return [
-            [['id', 'product_id', 'status'], 'integer'],
+            [['id', 'status'], 'integer'],
             [['id_type', 'id_number', 'full_name', 'email', 'whatsapp'], 'safe'],
         ];
     }
@@ -41,7 +41,7 @@ class QuotationSearch extends Quotation
      */
     public function search($params)
     {
-        $query = Quotation::find()->with('product');
+        $query = Quotation::find()->with(['quotationProducts', 'quotationProducts.product']);
 
         // add conditions that should always apply here
 
@@ -63,7 +63,6 @@ class QuotationSearch extends Quotation
         // grid filtering conditions
         $query->andFilterWhere([
             'id' => $this->id,
-            'product_id' => $this->product_id,
             'status' => $this->status,
         ]);
 

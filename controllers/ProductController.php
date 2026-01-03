@@ -6,11 +6,9 @@ use Yii;
 use app\models\Product;
 use app\models\Category;
 use app\models\ProductSearch;
-use app\models\Quotation;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\web\Response;
-use yii\helpers\FileHelper;
 use yii\helpers\Url;
 
 /**
@@ -28,9 +26,7 @@ class ProductController extends Controller
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
         $dataProvider->query->andWhere(['status' => Product::STATUS_ACTIVE]);
         
-        $categories = Category::find()
-            ->where(['status' => Category::STATUS_ACTIVE])
-            ->all();
+        $categories = Category::getMainCategories();
 
         return $this->render('index', [
             'searchModel' => $searchModel,
@@ -74,7 +70,7 @@ class ProductController extends Controller
     }
 
     /**
-     * Request quotation for a product
+     * Request quotation for a product (adds to cart and redirects to quotation page)
      * @param integer $id
      * @return mixed
      */
@@ -88,72 +84,22 @@ class ProductController extends Controller
             return ['success' => false, 'message' => 'El producto no está disponible.'];
         }
 
-        $quotation = new Quotation();
+        // Add product to quotation cart
+        $cart = Yii::$app->session->get('quotation_cart', []);
         
-        if (Yii::$app->request->isPost && $quotation->load(Yii::$app->request->post())) {
-            $quotation->product_id = $product->id;
-            
-            // Copy product image
-            $allImages = $product->getAllImages();
-            if (!empty($allImages)) {
-                $imagePath = $allImages[0];
-                $productImagePath = Yii::getAlias('@webroot') . $imagePath;
-                $quotationDir = Yii::getAlias('@webroot/uploads/quotations/');
-                FileHelper::createDirectory($quotationDir);
-                
-                $extension = pathinfo($imagePath, PATHINFO_EXTENSION);
-                if (empty($extension)) {
-                    $extension = 'jpg';
-                }
-                $fileName = 'product_' . $product->id . '_' . time() . '.' . $extension;
-                $destPath = $quotationDir . $fileName;
-                
-                if (file_exists($productImagePath) && copy($productImagePath, $destPath)) {
-                    $quotation->product_image = '/uploads/quotations/' . $fileName;
-                }
-            }
-            
-            if ($quotation->save()) {
-                // Send email
-                $this->sendQuotationEmail($quotation);
-                
-                return ['success' => true, 'message' => 'Su solicitud de cotización ha sido enviada exitosamente.'];
-            } else {
-                return ['success' => false, 'message' => 'Error al procesar la solicitud.', 'errors' => $quotation->errors];
-            }
+        if (isset($cart[$product->id])) {
+            $cart[$product->id] += 1;
+        } else {
+            $cart[$product->id] = 1;
         }
         
-        return ['success' => false, 'message' => 'Solicitud inválida.'];
-    }
-
-    /**
-     * Send quotation email
-     */
-    protected function sendQuotationEmail($quotation)
-    {
-        try {
-            $product = $quotation->product;
-            $adminEmail = Yii::$app->params['adminEmail'];
-            
-            $htmlBody = Yii::$app->view->renderFile('@app/views/mail/quotation.php', [
-                'quotation' => $quotation,
-                'product' => $product,
-            ]);
-            
-            $message = Yii::$app->mailer->compose()
-                ->setTo($adminEmail)
-                ->setFrom([Yii::$app->params['supportEmail'] => 'Tienda Online'])
-                ->setSubject('Nueva Solicitud de Cotización - ' . $product->name)
-                ->setHtmlBody($htmlBody);
-            
-            if ($quotation->product_image && file_exists(Yii::getAlias('@webroot') . $quotation->product_image)) {
-                $message->attach(Yii::getAlias('@webroot') . $quotation->product_image);
-            }
-            
-            $message->send();
-        } catch (\Exception $e) {
-            Yii::error('Error sending quotation email: ' . $e->getMessage());
-        }
+        Yii::$app->session->set('quotation_cart', $cart);
+        
+        return [
+            'success' => true, 
+            'message' => 'Producto agregado al carrito de cotización.',
+            'redirect' => Url::to(['/quotation'])
+        ];
     }
 
     /**

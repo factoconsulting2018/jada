@@ -7,6 +7,7 @@ use yii\helpers\Url;
 use app\models\Banner;
 use app\models\Product;
 use app\models\Category;
+use app\helpers\PriceHelper;
 
 $this->title = 'Inicio';
 
@@ -92,13 +93,27 @@ $categoryColors = [
                     <?php foreach ($featuredProducts as $product): ?>
                         <a href="<?= Url::to(['/product/view', 'id' => $product->id]) ?>" class="product-card" data-category-id="<?= $product->category_id ?>">
                             <img src="<?= Html::encode($product->imageUrl) ?>" alt="<?= Html::encode($product->name) ?>" class="product-image">
-                            <div class="product-info">
-                                <h3 class="product-name"><?= Html::encode($product->name) ?></h3>
-                                <?php if ($product->category): ?>
-                                    <p class="product-category"><?= Html::encode($product->category->name) ?></p>
-                                <?php endif; ?>
-                                <p class="product-price"><?= Html::encode($product->formattedPrice) ?></p>
-                            </div>
+                                <div class="product-info">
+                                    <h3 class="product-name"><?= Html::encode($product->name) ?></h3>
+                                    <?php if ($product->category): ?>
+                                        <p class="product-category"><?= Html::encode($product->category->name) ?></p>
+                                    <?php endif; ?>
+                                    <?php 
+                                    $dollarPrice = PriceHelper::formatDollars($product->price);
+                                    ?>
+                                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 0.5rem;">
+                                        <div>
+                                            <span style="font-size: 0.75rem; color: var(--md-sys-color-on-surface-variant); display: block; margin-bottom: 0.25rem;">Precio</span>
+                                            <p class="product-price" style="margin: 0; font-size: 1.125rem; font-weight: 500;"><?= Html::encode($product->formattedPrice) ?></p>
+                                        </div>
+                                        <?php if ($dollarPrice): ?>
+                                            <div style="text-align: right;">
+                                                <span style="font-size: 0.625rem; color: var(--md-sys-color-on-surface-variant); display: block; margin-bottom: 0.25rem;">Precio aprox en dólares</span>
+                                                <p style="margin: 0; font-size: 0.875rem; color: var(--md-sys-color-on-surface-variant);"><?= Html::encode($dollarPrice) ?></p>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
                         </a>
                     <?php endforeach; ?>
                 <?php else: ?>

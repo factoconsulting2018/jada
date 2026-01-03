@@ -5,8 +5,8 @@ use yii\grid\GridView;
 use yii\widgets\Pjax;
 
 /** @var yii\web\View $this */
-/** @var app\models\QuotationSearch $searchModel */
 /** @var yii\data\ActiveDataProvider $dataProvider */
+/** @var string $search */
 
 $this->title = 'Cotizaciones';
 $this->params['breadcrumbs'][] = $this->title;
@@ -18,19 +18,42 @@ $this->params['breadcrumbs'][] = $this->title;
             <?= Html::a('Nueva Cotización', ['create'], ['class' => 'btn btn-primary']) ?>
         </div>
 
+        <div style="margin-bottom: 2rem;">
+            <form method="get" action="<?= \yii\helpers\Url::to(['index']) ?>" style="display: flex; gap: 1rem; align-items: center;">
+                <input type="text" 
+                       name="search" 
+                       value="<?= Html::encode($search) ?>" 
+                       placeholder="Buscar por nombre, email, cédula o WhatsApp..." 
+                       class="form-control" 
+                       style="flex: 1; max-width: 500px;">
+                <button type="submit" class="btn btn-primary">Buscar</button>
+                <?php if (!empty($search)): ?>
+                    <a href="<?= \yii\helpers\Url::to(['index']) ?>" class="btn btn-secondary">Limpiar</a>
+                <?php endif; ?>
+            </form>
+        </div>
+
         <?php Pjax::begin(); ?>
 
         <?= GridView::widget([
             'dataProvider' => $dataProvider,
-            'filterModel' => $searchModel,
             'tableOptions' => ['class' => 'admin-table'],
             'columns' => [
                 ['class' => 'yii\grid\SerialColumn'],
                 [
-                    'attribute' => 'product_id',
-                    'label' => 'Producto',
+                    'label' => 'Productos',
                     'value' => function ($model) {
-                        return $model->product ? $model->product->name : 'N/A';
+                        $products = [];
+                        foreach ($model->quotationProducts as $qp) {
+                            $products[] = $qp->product->name . ' (x' . $qp->quantity . ')';
+                        }
+                        return !empty($products) ? implode(', ', $products) : 'Sin productos';
+                    },
+                ],
+                [
+                    'label' => 'Total',
+                    'value' => function ($model) {
+                        return '₡' . number_format($model->getTotal(), 2, '.', ',');
                     },
                 ],
                 [
@@ -45,10 +68,6 @@ $this->params['breadcrumbs'][] = $this->title;
                     'value' => function ($model) {
                         return $model->getIdTypeLabel();
                     },
-                    'filter' => [
-                        'fisico' => 'Físico',
-                        'juridico' => 'Jurídico',
-                    ],
                 ],
                 [
                     'attribute' => 'status',
@@ -56,10 +75,6 @@ $this->params['breadcrumbs'][] = $this->title;
                     'value' => function ($model) {
                         return $model->getStatusLabel();
                     },
-                    'filter' => [
-                        1 => 'Nueva',
-                        2 => 'Procesada',
-                    ],
                 ],
                 [
                     'attribute' => 'created_at',

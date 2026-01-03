@@ -37,39 +37,59 @@ class ConfigurationController extends Controller
         $whatsappNumber = Configuration::getValue('whatsapp_number', '1234567890');
         $siteTitle = Configuration::getValue('site_title', 'Tienda Online');
         $footerText = Configuration::getValue('footer_text', '© ' . date('Y') . ' Tienda Online. Todos los derechos reservados.');
+        $dollarPrice = Configuration::getValue('dollar_price', '500.00');
+        $showDollarPrice = Configuration::getValue('show_dollar_price', '0');
         
         if (Yii::$app->request->post()) {
-            $number = Yii::$app->request->post('whatsapp_number', '');
-            $number = preg_replace('/[^0-9]/', '', $number); // Remove non-numeric characters
-            $title = Yii::$app->request->post('site_title', 'Tienda Online');
-            $footer = Yii::$app->request->post('footer_text', '');
-            
+            $post = Yii::$app->request->post();
             $success = true;
-            
+
+            // Update WhatsApp number
+            $number = $post['whatsapp_number'] ?? '';
+            $number = preg_replace('/[^0-9]/', '', $number);
             if (!Configuration::setValue('whatsapp_number', $number)) {
                 $success = false;
             }
-            
-            if (!Configuration::setValue('site_title', $title)) {
+
+            // Update Site Title
+            $newSiteTitle = $post['site_title'] ?? '';
+            if (!Configuration::setValue('site_title', $newSiteTitle)) {
                 $success = false;
             }
-            
-            if (!Configuration::setValue('footer_text', $footer)) {
+
+            // Update Footer Text
+            $newFooterText = $post['footer_text'] ?? '';
+            if (!Configuration::setValue('footer_text', $newFooterText)) {
+                $success = false;
+            }
+
+            // Update Dollar Price
+            $newDollarPrice = $post['dollar_price'] ?? '500.00';
+            $newDollarPrice = preg_replace('/[^0-9.]/', '', $newDollarPrice);
+            if (!Configuration::setValue('dollar_price', $newDollarPrice)) {
+                $success = false;
+            }
+
+            // Update Show Dollar Price
+            $newShowDollarPrice = isset($post['show_dollar_price']) ? '1' : '0';
+            if (!Configuration::setValue('show_dollar_price', $newShowDollarPrice)) {
                 $success = false;
             }
             
             if ($success) {
                 Yii::$app->session->setFlash('success', 'Configuración actualizada exitosamente.');
-                return $this->refresh();
             } else {
                 Yii::$app->session->setFlash('error', 'Error al actualizar la configuración.');
             }
+            return $this->refresh();
         }
 
         return $this->render('index', [
             'whatsappNumber' => $whatsappNumber,
             'siteTitle' => $siteTitle,
             'footerText' => $footerText,
+            'dollarPrice' => $dollarPrice,
+            'showDollarPrice' => $showDollarPrice,
         ]);
     }
 }

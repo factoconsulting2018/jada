@@ -36,12 +36,32 @@ class QuotationController extends Controller
      */
     public function actionIndex()
     {
-        $searchModel = new QuotationSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $query = Quotation::find()->with(['quotationProducts', 'quotationProducts.product']);
+        
+        $search = Yii::$app->request->get('search', '');
+        if (!empty($search)) {
+            $query->andWhere([
+                'or',
+                ['like', 'full_name', $search],
+                ['like', 'email', $search],
+                ['like', 'id_number', $search],
+                ['like', 'whatsapp', $search],
+            ]);
+        }
+        
+        $dataProvider = new \yii\data\ActiveDataProvider([
+            'query' => $query,
+            'pagination' => [
+                'pageSize' => 20,
+            ],
+            'sort' => [
+                'defaultOrder' => ['created_at' => SORT_DESC],
+            ],
+        ]);
 
         return $this->render('index', [
-            'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
+            'search' => $search,
         ]);
     }
 
@@ -68,6 +88,8 @@ class QuotationController extends Controller
         $model = new Quotation();
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
+            // Send email to admin
+            $this->sendQuotationEmail($model);
             Yii::$app->session->setFlash('success', 'Cotización creada exitosamente.');
             return $this->redirect(['view', 'id' => $model->id]);
         }
@@ -115,9 +137,9 @@ class QuotationController extends Controller
     {
         $model = $this->findModel($id);
         
-        // Delete product image if exists
-        if ($model->product_image && file_exists(Yii::getAlias('@webroot') . $model->product_image)) {
-            unlink(Yii::getAlias('@webroot') . $model->product_image);
+        // Delete related quotation products (cascade will handle this, but we do it explicitly)
+        foreach ($model->quotationProducts as $qp) {
+            $qp->delete();
         }
         
         $model->delete();
@@ -127,32 +149,26 @@ class QuotationController extends Controller
     }
 
     /**
-     * Send quotation email
+     * Send quotation email to admin
      */
     protected function sendQuotationEmail($quotation)
     {
         try {
-            $product = $quotation->product;
             $adminEmail = Yii::$app->params['adminEmail'];
             
-            $htmlBody = Yii::$app->view->renderFile('@app/views/mail/quotation.php', [
+            $htmlBody = Yii::$app->view->renderFile('@app/views/mail/quotation-admin.php', [
                 'quotation' => $quotation,
-                'product' => $product,
             ]);
             
             $message = Yii::$app->mailer->compose()
                 ->setTo($adminEmail)
                 ->setFrom([Yii::$app->params['supportEmail'] => 'Tienda Online'])
-                ->setSubject('Cotización - ' . $product->name)
+                ->setSubject('Nueva Cotización #' . $quotation->id . ' - ' . $quotation->full_name)
                 ->setHtmlBody($htmlBody);
-            
-            if ($quotation->product_image && file_exists(Yii::getAlias('@webroot') . $quotation->product_image)) {
-                $message->attach(Yii::getAlias('@webroot') . $quotation->product_image);
-            }
             
             $message->send();
         } catch (\Exception $e) {
-            Yii::error('Error sending quotation email: ' . $e->getMessage());
+            Yii::error('Error sending quotation email to admin: ' . $e->getMessage());
         }
     }
 

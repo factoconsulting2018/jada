@@ -7,6 +7,8 @@ use yii\widgets\ActiveForm;
 /** @var string $whatsappNumber */
 /** @var string $siteTitle */
 /** @var string $footerText */
+/** @var string $dollarPrice */
+/** @var string $showDollarPrice */
 
 $this->title = 'Configuración';
 $this->params['breadcrumbs'][] = $this->title;
@@ -59,27 +61,63 @@ $this->params['breadcrumbs'][] = $this->title;
             </div>
         </div>
 
-        <div style="margin-top: 3rem;">
-            <h2 style="margin-bottom: 1rem;">Configuración de WhatsApp</h2>
-            <p style="color: var(--md-sys-color-on-surface-variant); margin-bottom: 2rem;">
-                Configura el número de WhatsApp que se utilizará en el botón de contacto de los productos.
-                Ingresa el número sin el símbolo + ni espacios (ejemplo: 50612345678).
-            </p>
+            <div style="margin-top: 3rem;">
+                <h2 style="margin-bottom: 1rem;">Configuración de Precios</h2>
+                <p style="color: var(--md-sys-color-on-surface-variant); margin-bottom: 2rem;">
+                    Configura el precio del dólar y si deseas mostrar el precio aproximado en dólares en los productos.
+                </p>
 
-            <div class="form-group">
-                <label for="whatsapp_number" class="form-label">Número de WhatsApp</label>
-                <input type="text" 
-                       id="whatsapp_number" 
-                       name="whatsapp_number" 
-                       class="form-control" 
-                       value="<?= Html::encode($whatsappNumber) ?>" 
-                       placeholder="50612345678"
-                       maxlength="20">
-                <small class="form-text" style="color: var(--md-sys-color-on-surface-variant); margin-top: 0.5rem; display: block;">
-                    Solo números. Sin + ni espacios.
-                </small>
+                <div class="form-group">
+                    <label for="dollar_price" class="form-label">Precio del Dólar (₡)</label>
+                    <input type="text" 
+                           id="dollar_price" 
+                           name="dollar_price" 
+                           class="form-control" 
+                           value="<?= Html::encode($dollarPrice) ?>" 
+                           placeholder="500.00"
+                           step="0.01">
+                    <small class="form-text" style="color: var(--md-sys-color-on-surface-variant); margin-top: 0.5rem; display: block;">
+                        Precio del dólar en colones costarricenses. Se usará para calcular el precio aproximado en USD.
+                    </small>
+                </div>
+
+                <div class="form-group" style="margin-top: 1.5rem;">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" 
+                               id="show_dollar_price" 
+                               name="show_dollar_price" 
+                               value="1"
+                               <?= $showDollarPrice == '1' ? 'checked' : '' ?>
+                               style="margin-right: 0.5rem; width: auto;">
+                        <span>Mostrar precio en dólares en los productos</span>
+                    </label>
+                    <small class="form-text" style="color: var(--md-sys-color-on-surface-variant); margin-top: 0.5rem; display: block;">
+                        Si está activado, se mostrará el precio aproximado en dólares junto al precio en colones.
+                    </small>
+                </div>
             </div>
-        </div>
+
+            <div style="margin-top: 3rem;">
+                <h2 style="margin-bottom: 1rem;">Configuración de WhatsApp</h2>
+                <p style="color: var(--md-sys-color-on-surface-variant); margin-bottom: 2rem;">
+                    Configura el número de WhatsApp que se utilizará en el botón de contacto de los productos.
+                    Ingresa el número sin el símbolo + ni espacios (ejemplo: 50612345678).
+                </p>
+
+                <div class="form-group">
+                    <label for="whatsapp_number" class="form-label">Número de WhatsApp</label>
+                    <input type="text" 
+                           id="whatsapp_number" 
+                           name="whatsapp_number" 
+                           class="form-control" 
+                           value="<?= Html::encode($whatsappNumber) ?>" 
+                           placeholder="50612345678"
+                           maxlength="20">
+                    <small class="form-text" style="color: var(--md-sys-color-on-surface-variant); margin-top: 0.5rem; display: block;">
+                        Solo números. Sin + ni espacios.
+                    </small>
+                </div>
+            </div>
 
         <div class="form-group" style="margin-top: 2rem;">
             <?= Html::submitButton('Guardar Configuración', ['class' => 'btn btn-primary']) ?>

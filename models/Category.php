@@ -46,11 +46,13 @@ class Category extends ActiveRecord
         return [
             [['name'], 'required'],
             [['description'], 'string'],
-            [['status'], 'integer'],
+            [['status', 'parent_id'], 'integer'],
             [['status'], 'default', 'value' => self::STATUS_ACTIVE],
             [['name'], 'string', 'max' => 255],
             [['image'], 'string', 'max' => 255],
             [['imageFile'], 'file', 'skipOnEmpty' => true, 'extensions' => 'png, jpg, jpeg, webp', 'maxSize' => 5 * 1024 * 1024, 'checkExtensionByMimeType' => false],
+            [['parent_id'], 'exist', 'skipOnError' => true, 'targetClass' => Category::class, 'targetAttribute' => ['parent_id' => 'id']],
+            [['parent_id'], 'compare', 'compareAttribute' => 'id', 'operator' => '!==', 'message' => 'Una categoría no puede ser su propia padre.'],
         ];
     }
 
@@ -66,6 +68,7 @@ class Category extends ActiveRecord
             'image' => 'Imagen',
             'imageFile' => 'Imagen',
             'status' => 'Estado',
+            'parent_id' => 'Categoría Padre',
             'created_at' => 'Fecha de Creación',
             'updated_at' => 'Fecha de Actualización',
         ];
@@ -93,6 +96,51 @@ class Category extends ActiveRecord
     {
         return $this->hasMany(Product::class, ['category_id' => 'id'])
             ->where(['status' => Product::STATUS_ACTIVE]);
+    }
+
+    /**
+     * Gets query for [[Parent]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getParent()
+    {
+        return $this->hasOne(Category::class, ['id' => 'parent_id']);
+    }
+
+    /**
+     * Gets query for [[Children]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getChildren()
+    {
+        return $this->hasMany(Category::class, ['parent_id' => 'id']);
+    }
+
+    /**
+     * Get active categories with no parent (main categories)
+     * @return Category[]
+     */
+    public static function getMainCategories()
+    {
+        return static::find()
+            ->where(['status' => self::STATUS_ACTIVE, 'parent_id' => null])
+            ->orderBy(['name' => SORT_ASC])
+            ->all();
+    }
+
+    /**
+     * Get active subcategories for a parent category
+     * @param int $parentId
+     * @return Category[]
+     */
+    public static function getSubcategories($parentId)
+    {
+        return static::find()
+            ->where(['status' => self::STATUS_ACTIVE, 'parent_id' => $parentId])
+            ->orderBy(['name' => SORT_ASC])
+            ->all();
     }
 
     /**

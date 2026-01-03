@@ -9,6 +9,7 @@ use yii\web\Response;
 use app\models\Product;
 use app\models\Category;
 use app\models\Banner;
+use app\helpers\PriceHelper;
 
 /**
  * Site controller
@@ -108,17 +109,19 @@ class SiteController extends Controller
         
         $products = $query->orderBy(['created_at' => SORT_DESC])->limit(20)->all();
         
-        $results = [];
-        foreach ($products as $product) {
-            $results[] = [
-                'id' => $product->id,
-                'name' => $product->name,
-                'price' => $product->formattedPrice,
-                'image' => $product->imageUrl,
-                'category' => $product->category->name ?? '',
-                'url' => \yii\helpers\Url::to(['/product/view', 'id' => $product->id]),
-            ];
-        }
+               $results = [];
+               foreach ($products as $product) {
+                   $dollarPrice = PriceHelper::formatDollars($product->price);
+                   $results[] = [
+                       'id' => $product->id,
+                       'name' => $product->name,
+                       'price' => $product->formattedPrice,
+                       'dollarPrice' => $dollarPrice,
+                       'image' => $product->imageUrl,
+                       'category' => $product->category->name ?? '',
+                       'url' => \yii\helpers\Url::to(['/product/view', 'id' => $product->id]),
+                   ];
+               }
         
         return ['products' => $results];
     }

@@ -11,18 +11,17 @@ use yii\helpers\FileHelper;
  * Quotation model
  *
  * @property integer $id
- * @property integer $product_id
  * @property string $id_type
  * @property string $id_number
  * @property string $full_name
  * @property string $email
  * @property string $whatsapp
- * @property string $product_image
  * @property integer $status
  * @property integer $created_at
  * @property integer $updated_at
  *
- * @property Product $product
+ * @property QuotationProduct[] $quotationProducts
+ * @property Product[] $products
  */
 class Quotation extends ActiveRecord
 {
@@ -46,8 +45,8 @@ class Quotation extends ActiveRecord
     public function rules()
     {
         return [
-            [['product_id', 'id_type', 'id_number', 'full_name', 'email', 'whatsapp'], 'required'],
-            [['product_id', 'status'], 'integer'],
+            [['id_type', 'id_number', 'full_name', 'email', 'whatsapp'], 'required'],
+            [['status'], 'integer'],
             [['id_type'], 'string', 'max' => 20],
             [['id_type'], 'in', 'range' => [self::ID_TYPE_FISICO, self::ID_TYPE_JURIDICO]],
             [['id_number'], 'string', 'max' => 50],
@@ -55,10 +54,8 @@ class Quotation extends ActiveRecord
             [['email'], 'email'],
             [['email'], 'string', 'max' => 255],
             [['whatsapp'], 'string', 'max' => 50],
-            [['product_image'], 'string', 'max' => 255],
             [['status'], 'default', 'value' => self::STATUS_NEW],
             [['status'], 'in', 'range' => [self::STATUS_NEW, self::STATUS_PROCESSED]],
-            [['product_id'], 'exist', 'skipOnError' => true, 'targetClass' => Product::class, 'targetAttribute' => ['product_id' => 'id']],
         ];
     }
 
@@ -69,13 +66,11 @@ class Quotation extends ActiveRecord
     {
         return [
             'id' => 'ID',
-            'product_id' => 'Producto',
             'id_type' => 'Tipo de Identificación',
             'id_number' => 'Cédula',
             'full_name' => 'Nombre Completo',
             'email' => 'Correo Electrónico',
             'whatsapp' => 'WhatsApp',
-            'product_image' => 'Imagen del Producto',
             'status' => 'Estado',
             'created_at' => 'Fecha de Creación',
             'updated_at' => 'Fecha de Actualización',
@@ -83,13 +78,37 @@ class Quotation extends ActiveRecord
     }
 
     /**
-     * Gets query for [[Product]].
+     * Gets query for [[QuotationProducts]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getProduct()
+    public function getQuotationProducts()
     {
-        return $this->hasOne(Product::class, ['id' => 'product_id']);
+        return $this->hasMany(QuotationProduct::class, ['quotation_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[Products]] via [[QuotationProducts]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getProducts()
+    {
+        return $this->hasMany(Product::class, ['id' => 'product_id'])
+            ->viaTable('{{%quotation_product}}', ['quotation_id' => 'id']);
+    }
+
+    /**
+     * Get total price of all products in quotation
+     * @return float
+     */
+    public function getTotal()
+    {
+        $total = 0;
+        foreach ($this->quotationProducts as $qp) {
+            $total += $qp->getSubtotal();
+        }
+        return $total;
     }
 
     /**
@@ -131,15 +150,5 @@ class Quotation extends ActiveRecord
         return $types[$this->id_type] ?? 'Desconocido';
     }
 
-    /**
-     * Get product image URL
-     */
-    public function getProductImageUrl()
-    {
-        if ($this->product_image) {
-            return Yii::getAlias('@web') . $this->product_image;
-        }
-        return null;
-    }
 }
 

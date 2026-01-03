@@ -32,7 +32,24 @@ $this->params['breadcrumbs'][] = $this->title;
                     },
                     'contentOptions' => ['style' => 'width: 80px;'],
                 ],
-                'name',
+                [
+                    'attribute' => 'name',
+                    'value' => function ($model) {
+                        return $model->parent_id ? '  └ ' . Html::encode($model->name) : Html::encode($model->name);
+                    },
+                    'format' => 'raw',
+                ],
+                [
+                    'attribute' => 'parent_id',
+                    'value' => function ($model) {
+                        return $model->parent ? Html::encode($model->parent->name) : '—';
+                    },
+                    'filter' => \yii\helpers\ArrayHelper::map(
+                        \app\models\Category::find()->where(['parent_id' => null])->all(),
+                        'id',
+                        'name'
+                    ),
+                ],
                 [
                     'attribute' => 'status',
                     'value' => function ($model) {

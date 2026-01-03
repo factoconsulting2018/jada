@@ -31,14 +31,6 @@ $this->params['breadcrumbs'][] = $this->title;
             'attributes' => [
                 'id',
                 [
-                    'attribute' => 'product_id',
-                    'label' => 'Producto',
-                    'value' => function ($model) {
-                        return $model->product ? Html::a($model->product->name, ['/admin/product/view', 'id' => $model->product_id]) : 'N/A';
-                    },
-                    'format' => 'raw',
-                ],
-                [
                     'attribute' => 'id_type',
                     'label' => 'Tipo de Identificación',
                     'value' => function ($model) {
@@ -50,17 +42,6 @@ $this->params['breadcrumbs'][] = $this->title;
                 'email:email',
                 'whatsapp',
                 [
-                    'attribute' => 'product_image',
-                    'label' => 'Imagen del Producto',
-                    'value' => function ($model) {
-                        if ($model->product_image) {
-                            return Html::img($model->productImageUrl, ['style' => 'max-width: 300px;']);
-                        }
-                        return 'No disponible';
-                    },
-                    'format' => 'raw',
-                ],
-                [
                     'attribute' => 'status',
                     'label' => 'Estado',
                     'value' => function ($model) {
@@ -71,6 +52,40 @@ $this->params['breadcrumbs'][] = $this->title;
                 'updated_at:datetime',
             ],
         ]) ?>
+
+        <h2 style="margin-top: 2rem; margin-bottom: 1rem;">Productos Cotizados</h2>
+        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 2px solid #e0e0e0;">
+                        <th style="padding: 0.75rem; text-align: left;">Producto</th>
+                        <th style="padding: 0.75rem; text-align: center;">Cantidad</th>
+                        <th style="padding: 0.75rem; text-align: right;">Precio Unitario</th>
+                        <th style="padding: 0.75rem; text-align: right;">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($model->quotationProducts as $qp): ?>
+                        <tr style="border-bottom: 1px solid #f0f0f0;">
+                            <td style="padding: 0.75rem;">
+                                <?= Html::a(Html::encode($qp->product->name), ['/admin/product/view', 'id' => $qp->product_id], ['target' => '_blank']) ?>
+                            </td>
+                            <td style="padding: 0.75rem; text-align: center;"><?= $qp->quantity ?></td>
+                            <td style="padding: 0.75rem; text-align: right;">₡<?= number_format($qp->price, 2, '.', ',') ?></td>
+                            <td style="padding: 0.75rem; text-align: right; font-weight: 500;">₡<?= number_format($qp->getSubtotal(), 2, '.', ',') ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+                <tfoot>
+                    <tr style="border-top: 2px solid #e0e0e0;">
+                        <td colspan="3" style="padding: 0.75rem; text-align: right; font-weight: 500; font-size: 1.125rem;">Total:</td>
+                        <td style="padding: 0.75rem; text-align: right; font-weight: 500; font-size: 1.25rem; color: var(--md-sys-color-primary);">
+                            ₡<?= number_format($model->getTotal(), 2, '.', ',') ?>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
     </div>
 </div>
 

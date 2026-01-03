@@ -119,5 +119,15 @@ class Page extends ActiveRecord
             ->orderBy(['menu_order' => SORT_ASC, 'title' => SORT_ASC])
             ->all();
     }
+
+    /**
+     * Gets query for [[FooterMenuItems]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getFooterMenuItems()
+    {
+        return $this->hasMany(\app\models\FooterMenuItem::class, ['page_id' => 'id']);
+    }
 }
 

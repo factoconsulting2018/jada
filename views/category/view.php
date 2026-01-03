@@ -8,6 +8,7 @@
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\widgets\LinkPager;
+use app\helpers\PriceHelper;
 
 $this->title = $category->name;
 ?>
@@ -62,7 +63,21 @@ $this->title = $category->name;
                             <?php endif; ?>
                             <div class="product-info">
                                 <h3 class="product-name"><?= Html::encode($product->name) ?></h3>
-                                <div class="product-price"><?= Html::encode($product->formattedPrice) ?></div>
+                                <?php 
+                                $dollarPrice = PriceHelper::formatDollars($product->price);
+                                ?>
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 0.5rem;">
+                                    <div>
+                                        <span style="font-size: 0.75rem; color: var(--md-sys-color-on-surface-variant); display: block; margin-bottom: 0.25rem;">Precio</span>
+                                        <div class="product-price" style="margin: 0; font-size: 1.125rem; font-weight: 500;"><?= Html::encode($product->formattedPrice) ?></div>
+                                    </div>
+                                    <?php if ($dollarPrice): ?>
+                                        <div style="text-align: right;">
+                                            <span style="font-size: 0.625rem; color: var(--md-sys-color-on-surface-variant); display: block; margin-bottom: 0.25rem;">Precio aprox en dólares</span>
+                                            <div style="font-size: 0.875rem; color: var(--md-sys-color-on-surface-variant);"><?= Html::encode($dollarPrice) ?></div>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </a>
                         <?php endforeach; ?>

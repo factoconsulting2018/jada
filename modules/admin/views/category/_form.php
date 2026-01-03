@@ -12,6 +12,20 @@ use yii\widgets\ActiveForm;
 
 <?= $form->field($model, 'name')->textInput(['maxlength' => true, 'class' => 'form-control']) ?>
 
+<?= $form->field($model, 'parent_id')->dropDownList(
+    \yii\helpers\ArrayHelper::map(
+        \app\models\Category::find()
+            ->where(['parent_id' => null])
+            ->andWhere(['<>', 'id', $model->id ?? 0])
+            ->orderBy('name')
+            ->all(),
+        'id',
+        'name'
+    ),
+    ['prompt' => 'Ninguna (Categoría Principal)', 'class' => 'form-control']
+) ?>
+<p class="help-block">Seleccione una categoría padre si esta es una subcategoría. Déjelo vacío para crear una categoría principal.</p>
+
 <?= $form->field($model, 'description')->textarea(['rows' => 6, 'class' => 'form-control']) ?>
 
 <?= $form->field($model, 'imageFile')->fileInput(['accept' => 'image/*', 'class' => 'form-control']) ?>
