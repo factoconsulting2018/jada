@@ -1,0 +1,17 @@
+# Docker Environment Variables Example
+# Copy this file to .docker-env and configure your values
+
+# MySQL Configuration
+MYSQL_DATABASE=tienda_online
+MYSQL_USER=tienda_user
+MYSQL_PASSWORD=tu_contraseña_segura
+MYSQL_ROOT_PASSWORD=root_contraseña_segura
+MYSQL_HOST=db
+
+# Application Configuration
+YII_DEBUG=false
+YII_ENV=prod
+
+# WhatsApp Configuration (se configurará en params.php o aquí)
+WHATSAPP_NUMBER=1234567890
+

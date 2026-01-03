@@ -1,0 +1,57 @@
+FROM php:8.1-fpm-alpine
+
+# Instalar dependencias
+RUN apk add --no-cache \
+    git \
+    curl \
+    libpng-dev \
+    oniguruma-dev \
+    libxml2-dev \
+    zip \
+    unzip \
+    libzip-dev \
+    freetype-dev \
+    libjpeg-turbo-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) pdo_mysql mbstring exif pcntl bcmath gd zip \
+    && apk del --no-cache freetype-dev libjpeg-turbo-dev
+
+# Instalar Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Crear directorio de trabajo
+WORKDIR /var/www/html
+
+# Copiar composer files primero para cache de dependencias
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+
+# Copiar el resto de archivos
+COPY . /var/www/html
+
+# Ejecutar composer scripts si es necesario
+RUN composer dump-autoload --optimize
+
+# Copiar script de entrada
+COPY docker-entrypoint-prod.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Establecer permisos
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html/web \
+    && chmod -R 777 /var/www/html/runtime \
+    && chmod -R 777 /var/www/html/web/uploads
+
+# Instalar mysql-client
+RUN apk add --no-cache mysql-client
+
+# PHP production config
+RUN echo "memory_limit = 256M" > /usr/local/etc/php/conf.d/custom.ini \
+    && echo "upload_max_filesize = 10M" >> /usr/local/etc/php/conf.d/custom.ini \
+    && echo "post_max_size = 10M" >> /usr/local/etc/php/conf.d/custom.ini
+
+EXPOSE 9000
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["php-fpm"]
+

@@ -1,0 +1,58 @@
+{
+    "name": "tienda-online/ecommerce",
+    "type": "project",
+    "description": "E-commerce en Yii 3 con Material Design 3",
+    "keywords": ["yii3", "ecommerce", "material-design"],
+    "license": "BSD-3-Clause",
+    "support": {
+        "issues": "https://github.com/yiisoft/yii2/issues?state=open",
+        "forum": "https://forum.yiiframework.com/",
+        "wiki": "https://www.yiiframework.com/wiki/",
+        "irc": "irc://irc.freenode.net/yii",
+        "source": "https://github.com/yiisoft/yii2"
+    },
+    "minimum-stability": "stable",
+    "require": {
+        "php": ">=8.0",
+        "yiisoft/yii2": "~2.0.0",
+        "yiisoft/yii2-bootstrap5": "*",
+        "yiisoft/yii2-swiftmailer": "*",
+        "yiisoft/yii2-debug": "^2.1@dev",
+        "yiisoft/yii2-gii": "^2.2@dev",
+        "yiisoft/yii2-faker": "^2.0@dev"
+    },
+    "require-dev": {
+        "yiisoft/yii2-debug": "*",
+        "yiisoft/yii2-gii": "*",
+        "yiisoft/yii2-faker": "*"
+    },
+    "config": {
+        "process-timeout": 1800,
+        "fxp-asset": {
+            "enabled": false
+        },
+        "allow-plugins": {
+            "yiisoft/yii2-composer": true
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "app\\": ""
+        }
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "yii\\composer\\Installer::postInstall"
+        ],
+        "post-create-project-cmd": [
+            "yii\\composer\\Installer::postCreateProject",
+            "yii\\composer\\Installer::postInstall"
+        ]
+    },
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://asset-packagist.org"
+        }
+    ]
+}

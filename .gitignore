@@ -1,0 +1,50 @@
+# Yii
+/web/index-test.php
+/web/index.php.bak
+
+# Composer
+/vendor/
+/composer.lock
+
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads (mantener estructura pero no archivos)
+/web/uploads/*
+!/web/uploads/.gitkeep
+
+# Assets (generados por Yii2)
+/web/assets/*
+!/web/assets/.gitkeep
+
+# Runtime
+/runtime/*
+!/runtime/.gitkeep
+
+# Logs
+*.log
+
+# Config local
+/config/db-local.php
+/config/params-local.php
+
+# Environment
+.env
+.env.local
+.docker-env
+
+# Docker
+docker/nginx/ssl/
+*.sql
+.migrations_done
+
