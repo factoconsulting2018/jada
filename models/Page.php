@@ -129,5 +129,32 @@ class Page extends ActiveRecord
     {
         return $this->hasMany(\app\models\FooterMenuItem::class, ['page_id' => 'id']);
     }
+
+    /**
+     * Check if page is in footer menu
+     */
+    public function isInFooterMenu()
+    {
+        return $this->getFooterMenuItems()->exists();
+    }
+
+    /**
+     * Get footer menu position (if exists)
+     */
+    public function getFooterMenuPosition()
+    {
+        $footerItem = $this->getFooterMenuItems()->one();
+        return $footerItem ? $footerItem->position : 1;
+    }
+
+    /**
+     * Get main menu item (if exists)
+     */
+    public function getMainMenuItem()
+    {
+        return \app\models\MainMenuItem::find()
+            ->where(['page_id' => $this->id])
+            ->one();
+    }
 }
 

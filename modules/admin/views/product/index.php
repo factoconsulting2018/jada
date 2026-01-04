@@ -3,6 +3,7 @@
 use yii\helpers\Html;
 use yii\grid\GridView;
 use yii\widgets\Pjax;
+use yii\widgets\ActiveForm;
 
 /** @var yii\web\View $this */
 /** @var app\models\ProductSearch $searchModel */
@@ -10,6 +11,8 @@ use yii\widgets\Pjax;
 
 $this->title = 'Productos';
 $this->params['breadcrumbs'][] = $this->title;
+
+$searchQuery = Yii::$app->request->get('ProductSearch')['name'] ?? '';
 ?>
 <div class="product-index">
     <div class="admin-card">
@@ -18,11 +21,39 @@ $this->params['breadcrumbs'][] = $this->title;
             <?= Html::a('Nuevo Producto', ['create'], ['class' => 'btn btn-primary']) ?>
         </div>
 
+        <?php $form = ActiveForm::begin([
+            'method' => 'get',
+            'action' => ['index'],
+            'options' => ['class' => 'product-search-form', 'style' => 'margin-bottom: 2rem;']
+        ]); ?>
+
+        <div style="display: flex; gap: 1rem; align-items: flex-end;">
+            <div style="flex: 1; max-width: 400px;">
+                <label for="product-search-input" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Buscar productos</label>
+                <input 
+                    type="text" 
+                    id="product-search-input" 
+                    name="ProductSearch[name]" 
+                    class="form-control" 
+                    value="<?= Html::encode($searchQuery) ?>" 
+                    placeholder="Buscar por nombre..."
+                    autocomplete="off"
+                >
+            </div>
+            <div>
+                <?= Html::submitButton('Buscar', ['class' => 'btn btn-primary']) ?>
+                <?php if ($searchQuery): ?>
+                    <?= Html::a('Limpiar', ['index'], ['class' => 'btn btn-secondary']) ?>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <?php ActiveForm::end(); ?>
+
         <?php Pjax::begin(); ?>
 
         <?= GridView::widget([
             'dataProvider' => $dataProvider,
-            'filterModel' => $searchModel,
             'tableOptions' => ['class' => 'admin-table'],
             'columns' => [
                 ['class' => 'yii\grid\SerialColumn'],
@@ -41,7 +72,6 @@ $this->params['breadcrumbs'][] = $this->title;
                 [
                     'attribute' => 'category_id',
                     'value' => 'category.name',
-                    'filter' => \yii\helpers\ArrayHelper::map(\app\models\Category::find()->all(), 'id', 'name'),
                 ],
                 [
                     'attribute' => 'price',
@@ -54,10 +84,6 @@ $this->params['breadcrumbs'][] = $this->title;
                     'value' => function ($model) {
                         return $model->status == \app\models\Product::STATUS_ACTIVE ? 'Activo' : 'Inactivo';
                     },
-                    'filter' => [
-                        \app\models\Product::STATUS_ACTIVE => 'Activo',
-                        \app\models\Product::STATUS_INACTIVE => 'Inactivo',
-                    ],
                 ],
                 [
                     'class' => 'yii\grid\ActionColumn',

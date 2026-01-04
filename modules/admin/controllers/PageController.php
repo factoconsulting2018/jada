@@ -4,6 +4,8 @@ namespace app\modules\admin\controllers;
 
 use Yii;
 use app\models\Page;
+use app\models\MainMenuItem;
+use app\models\FooterMenuItem;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
@@ -86,6 +88,7 @@ class PageController extends Controller
         $model->menu_order = 0;
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
+            $this->syncMenuItems($model);
             Yii::$app->session->setFlash('success', 'Página creada exitosamente.');
             return $this->redirect(['view', 'id' => $model->id]);
         }
@@ -107,6 +110,7 @@ class PageController extends Controller
         $model = $this->findModel($id);
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
+            $this->syncMenuItems($model);
             Yii::$app->session->setFlash('success', 'Página actualizada exitosamente.');
             return $this->redirect(['view', 'id' => $model->id]);
         }
@@ -145,6 +149,69 @@ class PageController extends Controller
         }
 
         throw new NotFoundHttpException('La página solicitada no existe.');
+    }
+
+    /**
+     * Sync menu items based on page's menu selection
+     */
+    private function syncMenuItems($page)
+    {
+        $addToMenu = Yii::$app->request->post('Page')['add_to_menu'] ?? 'none';
+        $footerPosition = Yii::$app->request->post('Page')['footer_position'] ?? 1;
+        $menuOrder = $page->menu_order ?? 0;
+
+        // Handle Main Menu
+        $mainMenuItem = MainMenuItem::find()->where(['page_id' => $page->id])->one();
+        
+        if (in_array($addToMenu, ['main', 'both'])) {
+            // Create or update main menu item
+            if (!$mainMenuItem) {
+                $mainMenuItem = new MainMenuItem();
+                $mainMenuItem->type = MainMenuItem::TYPE_PAGE;
+                $mainMenuItem->page_id = $page->id;
+                $mainMenuItem->label = $page->title;
+                $mainMenuItem->order = $menuOrder;
+                $mainMenuItem->status = $page->status == Page::STATUS_ACTIVE ? MainMenuItem::STATUS_ACTIVE : MainMenuItem::STATUS_INACTIVE;
+            } else {
+                $mainMenuItem->label = $page->title;
+                $mainMenuItem->order = $menuOrder;
+                $mainMenuItem->status = $page->status == Page::STATUS_ACTIVE ? MainMenuItem::STATUS_ACTIVE : MainMenuItem::STATUS_INACTIVE;
+            }
+            $mainMenuItem->save(false);
+        } else {
+            // Remove from main menu if exists
+            if ($mainMenuItem) {
+                $mainMenuItem->delete();
+            }
+        }
+
+        // Handle Footer Menu
+        $footerMenuItem = FooterMenuItem::find()->where(['page_id' => $page->id])->one();
+        
+        if (in_array($addToMenu, ['footer', 'both'])) {
+            // Create or update footer menu item
+            if (!$footerMenuItem) {
+                $footerMenuItem = new FooterMenuItem();
+                $footerMenuItem->page_id = $page->id;
+                $footerMenuItem->position = (int)$footerPosition;
+                $footerMenuItem->order = $menuOrder;
+                $footerMenuItem->status = $page->status == Page::STATUS_ACTIVE ? FooterMenuItem::STATUS_ACTIVE : FooterMenuItem::STATUS_INACTIVE;
+            } else {
+                $footerMenuItem->position = (int)$footerPosition;
+                $footerMenuItem->order = $menuOrder;
+                $footerMenuItem->status = $page->status == Page::STATUS_ACTIVE ? FooterMenuItem::STATUS_ACTIVE : FooterMenuItem::STATUS_INACTIVE;
+            }
+            $footerMenuItem->save(false);
+        } else {
+            // Remove from footer menu if exists
+            if ($footerMenuItem) {
+                $footerMenuItem->delete();
+            }
+        }
+
+        // Update show_in_menu for backward compatibility
+        $page->show_in_menu = in_array($addToMenu, ['main', 'both']) ? 1 : 0;
+        $page->save(false);
     }
 }
 

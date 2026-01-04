@@ -323,6 +323,23 @@ class ProductController extends Controller
     }
 
     /**
+     * Generate and display QR code for printing
+     */
+    public function actionQr($id)
+    {
+        $model = $this->findModel($id);
+        
+        $productUrl = \yii\helpers\Url::to(['/product/view', 'id' => $model->id], true);
+        
+        // Render without layout for printing
+        $this->layout = false;
+        return $this->render('qr', [
+            'model' => $model,
+            'productUrl' => $productUrl,
+        ]);
+    }
+
+    /**
      * Deletes an existing Product model.
      * If deletion is successful, the browser will be redirected to the 'index' page.
      * @param integer $id

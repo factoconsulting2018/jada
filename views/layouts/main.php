@@ -6,13 +6,13 @@
 use app\assets\AppAsset;
 use yii\helpers\Html;
 use app\models\Configuration;
-use app\models\Page;
+use app\models\MainMenuItem;
 
 AppAsset::register($this);
 
 $siteTitle = Configuration::getValue('site_title', 'Tienda Online');
 $footerText = Configuration::getValue('footer_text', '© ' . date('Y') . ' Tienda Online. Todos los derechos reservados.');
-$menuPages = Page::getMenuPages();
+$mainMenuItems = MainMenuItem::getMenuItems();
 
 $this->registerCsrfMetaTags();
 $this->registerMetaTag(['charset' => Yii::$app->charset], 'charset');
@@ -52,13 +52,9 @@ $this->registerMetaTag(['name' => 'viewport', 'content' => 'width=device-width, 
                     </div>
                 </li>
                 <?php endif; ?>
-                <li><a href="<?= \yii\helpers\Url::to(['/']) ?>">Inicio</a></li>
-                <li><a href="<?= \yii\helpers\Url::to(['/products']) ?>">Productos</a></li>
-                <?php foreach ($menuPages as $page): ?>
-                    <li><a href="<?= \yii\helpers\Url::to(['/page/view', 'slug' => $page->slug]) ?>"><?= Html::encode($page->title) ?></a></li>
+                <?php foreach ($mainMenuItems as $menuItem): ?>
+                    <li><a href="<?= Html::encode($menuItem->getMenuUrl()) ?>"><?= Html::encode($menuItem->label) ?></a></li>
                 <?php endforeach; ?>
-                    <li><a href="<?= \yii\helpers\Url::to(['/quotation']) ?>">Cotización</a></li>
-                    <li><a href="<?= \yii\helpers\Url::to(['/admin/login']) ?>">Admin</a></li>
             </ul>
         </nav>
     </div>

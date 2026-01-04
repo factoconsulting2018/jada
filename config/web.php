@@ -41,7 +41,18 @@ $config = [
             'targets' => [
                 [
                     'class' => 'yii\log\FileTarget',
+                    'levels' => ['error', 'warning', 'info', 'trace'],
+                    'logVars' => ['_GET', '_POST', '_FILES', '_COOKIE', '_SESSION'],
+                    'except' => [
+                        'yii\web\HttpException:404',
+                        'yii\web\HttpException:403',
+                    ],
+                ],
+                [
+                    'class' => 'yii\log\FileTarget',
                     'levels' => ['error', 'warning'],
+                    'categories' => ['yii\db\*'],
+                    'logFile' => '@runtime/logs/db.log',
                 ],
             ],
         ],

@@ -15,25 +15,29 @@ use app\models\ProductVideo;
 <!-- Tabs Container -->
 <div class="product-form-tabs-container">
     <div class="product-form-tabs">
-        <button type="button" class="product-form-tab active" data-tab="general" onclick="switchProductFormTab('general')">
+        <button type="button" class="product-form-tab product-form-tab-general active" data-tab="general" onclick="switchProductFormTab('general')">
             <span class="material-icons" style="font-size: 18px; vertical-align: middle; margin-right: 0.5rem;">info</span>
             Información General
         </button>
-        <button type="button" class="product-form-tab" data-tab="images" onclick="switchProductFormTab('images')">
+        <button type="button" class="product-form-tab product-form-tab-images" data-tab="images" onclick="switchProductFormTab('images')">
             <span class="material-icons" style="font-size: 18px; vertical-align: middle; margin-right: 0.5rem;">image</span>
             Imágenes
         </button>
-        <button type="button" class="product-form-tab" data-tab="videos" onclick="switchProductFormTab('videos')">
+        <button type="button" class="product-form-tab product-form-tab-videos" data-tab="videos" onclick="switchProductFormTab('videos')">
             <span class="material-icons" style="font-size: 18px; vertical-align: middle; margin-right: 0.5rem;">play_circle</span>
             Vídeos
         </button>
-        <button type="button" class="product-form-tab" data-tab="documents" onclick="switchProductFormTab('documents')">
+        <button type="button" class="product-form-tab product-form-tab-documents" data-tab="documents" onclick="switchProductFormTab('documents')">
             <span class="material-icons" style="font-size: 18px; vertical-align: middle; margin-right: 0.5rem;">description</span>
             Documentos Técnicos
         </button>
-        <button type="button" class="product-form-tab" data-tab="related" onclick="switchProductFormTab('related')">
+        <button type="button" class="product-form-tab product-form-tab-related" data-tab="related" onclick="switchProductFormTab('related')">
             <span class="material-icons" style="font-size: 18px; vertical-align: middle; margin-right: 0.5rem;">link</span>
             Productos Relacionados
+        </button>
+        <button type="button" class="product-form-tab product-form-tab-qr" data-tab="qr" onclick="switchProductFormTab('qr')">
+            <span class="material-icons" style="font-size: 18px; vertical-align: middle; margin-right: 0.5rem;">qr_code</span>
+            QR
         </button>
     </div>
 
@@ -220,7 +224,39 @@ use app\models\ProductVideo;
         </div>
     </div>
 
-    <!-- Tab 5: Productos Relacionados -->
+    <!-- Tab 5: QR -->
+    <div class="product-form-tab-content" id="product-form-tab-qr">
+        <div style="padding: 1.5rem; border: 1px solid #e0e0e0; border-radius: 8px; border-top-left-radius: 0;">
+            <?= $form->field($model, 'qr_label_top')->textInput(['maxlength' => true, 'class' => 'form-control', 'placeholder' => 'Texto que aparecerá arriba del QR']) ?>
+            <p class="help-block">Texto que se mostrará arriba del código QR cuando se imprima.</p>
+
+            <?= $form->field($model, 'qr_label_bottom')->textInput(['maxlength' => true, 'class' => 'form-control', 'placeholder' => 'Texto que aparecerá abajo del QR']) ?>
+            <p class="help-block">Texto que se mostrará abajo del código QR cuando se imprima.</p>
+
+            <?php if (!$model->isNewRecord): ?>
+                <div class="form-group" style="margin-top: 2rem;">
+                    <label class="control-label">Vista Previa del QR</label>
+                    <div style="text-align: center; padding: 2rem; background: #f5f5f5; border-radius: 8px; margin-top: 1rem;">
+                        <a href="<?= \yii\helpers\Url::to(['/admin/product/qr', 'id' => $model->id]) ?>" 
+                           target="_blank" 
+                           class="btn btn-primary"
+                           style="margin-bottom: 1rem;">
+                            <span class="material-icons" style="font-size: 18px; vertical-align: middle; margin-right: 0.5rem;">visibility</span>
+                            Ver QR para Imprimir
+                        </a>
+                        <p class="help-block">Haga clic en el botón para ver el código QR con las etiquetas y poder imprimirlo.</p>
+                    </div>
+                </div>
+            <?php else: ?>
+                <div class="alert alert-info" style="margin-top: 1rem; padding: 1rem; background: #e3f2fd; border: 1px solid #90caf9; border-radius: 4px; color: #1976d2;">
+                    <span class="material-icons" style="vertical-align: middle; margin-right: 0.5rem;">info</span>
+                    Guarde el producto primero para poder ver y generar el código QR.
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Tab 6: Productos Relacionados -->
     <div class="product-form-tab-content" id="product-form-tab-related">
         <div style="padding: 1.5rem; border: 1px solid #e0e0e0; border-radius: 8px; border-top-left-radius: 0;">
             <div class="form-group">
@@ -275,27 +311,79 @@ use app\models\ProductVideo;
     padding: 0.75rem 1.5rem;
     background: transparent;
     border: none;
-    border-bottom: 2px solid transparent;
+    border-bottom: 3px solid transparent;
     cursor: pointer;
     font-size: 0.95rem;
     font-weight: 500;
-    color: var(--md-sys-color-on-surface-variant);
+    color: white;
     transition: all 0.3s ease;
     position: relative;
     bottom: -2px;
     display: flex;
     align-items: center;
+    opacity: 0.8;
 }
 
 .product-form-tab:hover {
-    color: var(--md-sys-color-primary);
-    background-color: rgba(103, 80, 164, 0.05);
+    opacity: 1;
+}
+
+/* Tab 1: Información General - Azul */
+.product-form-tab-general {
+    background-color: #2196F3;
+    border-bottom-color: #2196F3;
+}
+.product-form-tab-general:hover {
+    background-color: #1976D2;
+}
+
+/* Tab 2: Imágenes - Verde */
+.product-form-tab-images {
+    background-color: #4CAF50;
+    border-bottom-color: #4CAF50;
+}
+.product-form-tab-images:hover {
+    background-color: #388E3C;
+}
+
+/* Tab 3: Vídeos - Rojo */
+.product-form-tab-videos {
+    background-color: #F44336;
+    border-bottom-color: #F44336;
+}
+.product-form-tab-videos:hover {
+    background-color: #D32F2F;
+}
+
+/* Tab 4: Documentos Técnicos - Naranja */
+.product-form-tab-documents {
+    background-color: #FF9800;
+    border-bottom-color: #FF9800;
+}
+.product-form-tab-documents:hover {
+    background-color: #F57C00;
+}
+
+/* Tab 5: Productos Relacionados - Púrpura */
+.product-form-tab-related {
+    background-color: #9C27B0;
+    border-bottom-color: #9C27B0;
+}
+.product-form-tab-related:hover {
+    background-color: #7B1FA2;
+}
+
+/* Tab 6: QR - Teal/Cian */
+.product-form-tab-qr {
+    background-color: #009688;
+    border-bottom-color: #009688;
+}
+.product-form-tab-qr:hover {
+    background-color: #00796B;
 }
 
 .product-form-tab.active {
-    color: var(--md-sys-color-primary);
-    border-bottom-color: var(--md-sys-color-primary);
-    background-color: transparent;
+    opacity: 1;
 }
 
 .product-form-tab-content {

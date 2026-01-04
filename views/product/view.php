@@ -97,6 +97,9 @@ $mainImage = !empty($allImages) ? $allImages[0] : ($model->imageUrl ?? '');
                 if ($dollarPrice): 
                 ?>
                     <div style="text-align: right;">
+                        <div style="margin-bottom: 0.25rem;">
+                            <?= Html::a('<span class="material-icons" style="font-size: 22px; vertical-align: middle; color: var(--md-sys-color-on-surface-variant);">print</span>', ['pdf', 'id' => $model->id], ['target' => '_blank', 'title' => 'Generar PDF', 'style' => 'text-decoration: none; display: inline-block; margin-bottom: 0.25rem;']) ?>
+                        </div>
                         <span style="font-size: 0.75rem; color: var(--md-sys-color-on-surface-variant); display: block; margin-bottom: 0.25rem;">Precio aprox en dólares</span>
                         <div style="font-size: 1.25rem; color: var(--md-sys-color-on-surface-variant);"><?= Html::encode($dollarPrice) ?></div>
                     </div>

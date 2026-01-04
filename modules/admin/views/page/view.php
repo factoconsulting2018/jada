@@ -52,7 +52,7 @@ $this->params['breadcrumbs'][] = $this->title;
         ]) ?>
 
         <div style="margin-top: 2rem; padding: 1.5rem; background: #f5f5f5; border-radius: 8px;">
-            <h3 style="margin-top: 0;">Menú del Footer</h3>
+            <h3 style="margin-top: 0;">Menú Footer</h3>
             <?php
             $footerItems = $model->footerMenuItems;
             if (!empty($footerItems)):
@@ -71,7 +71,7 @@ $this->params['breadcrumbs'][] = $this->title;
             <?php endif; ?>
             
             <div style="margin-top: 1rem;">
-                <?= Html::a('Agregar al Menú del Footer', ['/admin/footer-menu/create', 'page_id' => $model->id], ['class' => 'btn btn-primary']) ?>
+                <?= Html::a('Agregar al Menú Footer', ['/admin/footer-menu/create', 'page_id' => $model->id], ['class' => 'btn btn-primary']) ?>
             </div>
         </div>
     </div>

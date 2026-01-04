@@ -66,7 +66,7 @@ class Product extends ActiveRecord
             [['images'], 'string'],
             [['video_url'], 'string', 'max' => 500],
             [['video_url'], 'url', 'defaultScheme' => 'https'],
-            [['technical_specs_pdf', 'technical_specs_pdf_name'], 'string', 'max' => 255],
+            [['technical_specs_pdf', 'technical_specs_pdf_name', 'qr_label_top', 'qr_label_bottom'], 'string', 'max' => 255],
             [['imageFiles'], 'file', 'skipOnEmpty' => true, 'extensions' => 'png, jpg, jpeg, webp', 'maxSize' => 5 * 1024 * 1024, 'maxFiles' => 20, 'checkExtensionByMimeType' => false],
             [['technicalSpecsPdfFile'], 'file', 'skipOnEmpty' => true, 'extensions' => 'pdf', 'maxSize' => 10 * 1024 * 1024, 'checkExtensionByMimeType' => false],
         ];
@@ -90,6 +90,8 @@ class Product extends ActiveRecord
             'technical_specs_pdf' => 'Especificaciones Técnicas (PDF)',
             'technical_specs_pdf_name' => 'Nombre del Documento',
             'technicalSpecsPdfFile' => 'Especificaciones Técnicas (PDF)',
+            'qr_label_top' => 'Etiqueta Superior QR',
+            'qr_label_bottom' => 'Etiqueta Inferior QR',
             'status' => 'Estado',
             'created_at' => 'Fecha de Creación',
             'updated_at' => 'Fecha de Actualización',

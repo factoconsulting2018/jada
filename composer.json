@@ -19,7 +19,9 @@
         "yiisoft/yii2-swiftmailer": "*",
         "yiisoft/yii2-debug": "^2.1@dev",
         "yiisoft/yii2-gii": "^2.2@dev",
-        "yiisoft/yii2-faker": "^2.0@dev"
+        "yiisoft/yii2-faker": "^2.0@dev",
+        "endroid/qr-code": "^5.1",
+        "kartik-v/yii2-mpdf": "*"
     },
     "require-dev": {
         "yiisoft/yii2-debug": "*",
