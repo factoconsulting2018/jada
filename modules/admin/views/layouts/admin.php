@@ -47,9 +47,6 @@ $this->registerMetaTag(['name' => 'keywords', 'content' => $this->params['meta_k
                 <li><a href="<?= \yii\helpers\Url::to(['/admin/banner']) ?>" class="nav-link">
                     <span class="material-icons">image</span> Banners
                 </a></li>
-                <li><a href="<?= \yii\helpers\Url::to(['/admin/parallax-background']) ?>" class="nav-link <?= $this->context->id == 'parallax-background' ? 'active' : '' ?>">
-                    <span class="material-icons">wallpaper</span> Fondos Parallax
-                </a></li>
                 <li><a href="<?= \yii\helpers\Url::to(['/admin/client']) ?>" class="nav-link">
                     <span class="material-icons">people</span> Clientes
                 </a></li>

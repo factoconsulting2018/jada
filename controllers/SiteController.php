@@ -41,7 +41,7 @@ class SiteController extends Controller
         $featuredProducts = Product::find()
             ->where(['status' => Product::STATUS_ACTIVE])
             ->orderBy(['created_at' => SORT_DESC])
-            ->limit(20)
+            ->limit(5)
             ->all();
         
         $categories = Category::find()

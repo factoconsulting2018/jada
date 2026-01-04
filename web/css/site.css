@@ -440,9 +440,82 @@ body {
 }
 
 .product-description {
-    margin: 2rem 0;
+    margin: 0;
     line-height: 1.8;
     color: var(--md-sys-color-on-surface-variant);
+}
+
+/* Product Tabs */
+.product-tabs-container {
+    margin-top: 2rem;
+}
+
+.product-tabs {
+    display: flex;
+    border-bottom: 2px solid #e0e0e0;
+    margin-bottom: 0;
+    gap: 0;
+}
+
+.product-tab {
+    padding: 1rem 1.5rem;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    color: white;
+    transition: all 0.3s ease;
+    position: relative;
+    bottom: -2px;
+}
+
+/* Tab 1: Descripción - Negro */
+.product-tab[data-tab="description"] {
+    background-color: #000000;
+    border-bottom-color: #000000;
+}
+
+.product-tab[data-tab="description"]:hover {
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+/* Tab 2: Descripción Técnica - Naranja */
+.product-tab[data-tab="technical"] {
+    background-color: #FF9800;
+    border-bottom-color: #FF9800;
+}
+
+.product-tab[data-tab="technical"]:hover {
+    background-color: rgba(255, 152, 0, 0.8);
+}
+
+/* Tab 3: Vídeos - Verde */
+.product-tab[data-tab="videos"] {
+    background-color: #4CAF50;
+    border-bottom-color: #4CAF50;
+}
+
+.product-tab[data-tab="videos"]:hover {
+    background-color: rgba(76, 175, 80, 0.8);
+}
+
+.product-tab.active {
+    opacity: 1;
+}
+
+.product-tab-content {
+    display: none;
+    padding: 2rem 0;
+    min-height: 200px;
+}
+
+.product-tab-content.active {
+    display: block;
+}
+
+.product-tab-content a[download]:hover {
+    background-color: #5a4290 !important;
 }
 
 .whatsapp-button {
@@ -1159,7 +1232,8 @@ body {
     position: relative;
     z-index: 1;
     width: 100%;
-    margin: 0;
+    max-width: 1400px;
+    margin: 0 auto;
     padding: 2rem;
 }
 
@@ -1179,11 +1253,12 @@ body {
 .sponsors-section {
     padding: 3rem 0;
     background-color: #f9f9f9;
+    width: 100%;
 }
 
 .sponsors-section .container {
-    max-width: 1200px;
-    margin: 0 auto;
+    width: 100%;
+    margin: 0;
     padding: 0 2rem;
 }
 
@@ -1199,12 +1274,12 @@ body {
     align-items: center;
     justify-content: center;
     background: white;
-    padding: 1.5rem;
+    padding: 2rem;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     text-decoration: none;
-    height: 120px;
+    height: 180px;
     overflow: hidden;
 }
 
@@ -1513,7 +1588,7 @@ body {
 
 @media (max-width: 768px) {
     .category-grid {
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        grid-template-columns: repeat(2, 1fr);
         gap: 0.75rem;
     }
     
@@ -1535,7 +1610,7 @@ body {
     
     .products-scroll-wrapper {
         margin: 0 auto 3rem;
-        padding: 0 1rem;
+        padding: 0 3rem;
     }
     
     .products-scroll-wrapper .products-grid {
@@ -1544,9 +1619,9 @@ body {
     }
     
     .products-scroll-wrapper .products-grid .product-card {
-        flex: 0 0 240px;
-        min-width: 240px;
-        max-width: 240px;
+        flex: 0 0 calc(100% - 2rem);
+        min-width: calc(100% - 2rem);
+        max-width: calc(100% - 2rem);
     }
     
     .products-scroll-btn {
@@ -1559,11 +1634,11 @@ body {
     }
     
     .products-scroll-left {
-        left: -12px;
+        left: 0.5rem;
     }
     
     .products-scroll-right {
-        right: -12px;
+        right: 0.5rem;
     }
     
     .product-index .products-section > div {
@@ -1573,13 +1648,39 @@ body {
     .product-index-grid {
         grid-template-columns: 1fr !important;
     }
+    
+    .sponsors-section .container {
+        padding: 0 1rem;
+    }
+    
+    .sponsors-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    
+    .sponsor-item {
+        height: 140px;
+        padding: 1.5rem;
+    }
 }
 
 @media (max-width: 480px) {
+    .products-scroll-wrapper {
+        padding: 0 3rem;
+    }
+    
     .products-scroll-wrapper .products-grid .product-card {
-        flex: 0 0 200px;
-        min-width: 200px;
-        max-width: 200px;
+        flex: 0 0 calc(100% - 2rem);
+        min-width: calc(100% - 2rem);
+        max-width: calc(100% - 2rem);
+    }
+    
+    .products-scroll-left {
+        left: 0.5rem;
+    }
+    
+    .products-scroll-right {
+        right: 0.5rem;
     }
 }
 

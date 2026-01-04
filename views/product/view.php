@@ -71,14 +71,12 @@ $mainImage = !empty($allImages) ? $allImages[0] : ($model->imageUrl ?? '');
         </div>
 
         <!-- Video Modal -->
-        <?php if ($model->video_url && $model->getYouTubeEmbedUrl()): ?>
         <div id="videoModal" class="video-modal" style="display: none;" onclick="closeVideoModal()">
             <div class="video-modal-content" onclick="event.stopPropagation()">
                 <span class="video-modal-close" onclick="closeVideoModal()">&times;</span>
                 <iframe id="videoFrame" width="100%" height="500" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="border-radius: 12px;"></iframe>
             </div>
         </div>
-        <?php endif; ?>
 
         <div class="product-info-detail">
             <h1><?= Html::encode($model->name) ?></h1>
@@ -105,12 +103,6 @@ $mainImage = !empty($allImages) ? $allImages[0] : ($model->imageUrl ?? '');
                 <?php endif; ?>
             </div>
             
-            <?php if ($model->description): ?>
-                <div class="product-description">
-                    <?= nl2br(Html::encode($model->description)) ?>
-                </div>
-            <?php endif; ?>
-
             <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 2rem;">
                 <a href="<?= Html::encode($whatsappUrl) ?>" target="_blank" class="whatsapp-button">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
@@ -122,6 +114,118 @@ $mainImage = !empty($allImages) ? $allImages[0] : ($model->imageUrl ?? '');
                     <span class="material-icons" style="margin-right: 8px; vertical-align: middle;">description</span>
                     Agregar a Cotización
                 </button>
+            </div>
+
+            <!-- Tabs Section -->
+            <div class="product-tabs-container" style="margin-top: 2rem;">
+                <div class="product-tabs">
+                    <button class="product-tab active" data-tab="description" onclick="switchProductTab('description')">
+                        Descripción
+                    </button>
+                    <button class="product-tab" data-tab="technical" onclick="switchProductTab('technical')">
+                        Descripción Técnica
+                    </button>
+                    <button class="product-tab" data-tab="videos" onclick="switchProductTab('videos')">
+                        Vídeos del producto
+                    </button>
+                </div>
+                
+                <div class="product-tab-content active" id="product-tab-description">
+                    <?php if ($model->description): ?>
+                        <div class="product-description">
+                            <?= nl2br(Html::encode($model->description)) ?>
+                        </div>
+                    <?php else: ?>
+                        <p style="color: var(--md-sys-color-on-surface-variant);">No hay descripción disponible.</p>
+                    <?php endif; ?>
+                </div>
+                
+                <div class="product-tab-content" id="product-tab-technical">
+                    <?php 
+                    $technicalSpecs = $model->technicalSpecs;
+                    if (!empty($technicalSpecs)): ?>
+                        <div style="padding: 2rem; display: flex; flex-direction: column; gap: 1rem;">
+                            <?php foreach ($technicalSpecs as $spec): ?>
+                                <a href="<?= Html::encode($spec->getFileUrl()) ?>" 
+                                   download
+                                   target="_blank"
+                                   style="display: inline-flex; align-items: center; gap: 0.75rem; padding: 1rem 1.5rem; background: var(--md-sys-color-primary); color: white; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 1rem; transition: background-color 0.3s;">
+                                    <span class="material-icons">description</span>
+                                    <span><?= Html::encode($spec->getDisplayName()) ?></span>
+                                    <span class="material-icons">download</span>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <p style="color: var(--md-sys-color-on-surface-variant); text-align: center; padding: 2rem;">
+                            No hay especificaciones técnicas disponibles.
+                        </p>
+                    <?php endif; ?>
+                </div>
+                
+                <div class="product-tab-content" id="product-tab-videos">
+                    <?php 
+                    $videos = $model->videos;
+                    // Si no hay videos en la nueva tabla pero hay video_url antiguo, usarlo
+                    if (empty($videos) && $model->video_url && $model->getYouTubeEmbedUrl()) {
+                        // Mostrar el video antiguo directamente
+                        ?>
+                        <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; background: #000;">
+                            <iframe src="<?= Html::encode($model->getYouTubeEmbedUrl()) ?>" 
+                                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+                                    frameborder="0" 
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                    allowfullscreen>
+                            </iframe>
+                        </div>
+                        <?php
+                    } elseif (!empty($videos)) {
+                        if (count($videos) == 1) {
+                            // Solo un video, mostrarlo directamente
+                            $video = $videos[0];
+                            $embedUrl = $video->getYouTubeEmbedUrl();
+                            if ($embedUrl) {
+                                ?>
+                                <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; background: #000;">
+                                    <iframe src="<?= Html::encode($embedUrl) ?>" 
+                                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+                                            frameborder="0" 
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                            allowfullscreen>
+                                    </iframe>
+                                </div>
+                                <?php
+                            }
+                        } else {
+                            // Múltiples videos, mostrar como botones
+                            ?>
+                            <div style="padding: 2rem; display: flex; flex-direction: column; gap: 1rem;">
+                                <?php foreach ($videos as $video): 
+                                    $embedUrl = $video->getYouTubeEmbedUrl();
+                                    if ($embedUrl):
+                                ?>
+                                    <button type="button" 
+                                            class="video-button" 
+                                            onclick="openVideoModal('<?= Html::encode($embedUrl) ?>')"
+                                            style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem 1.5rem; background: var(--md-sys-color-primary); color: white; text-decoration: none; border: none; border-radius: 8px; font-weight: 500; font-size: 1rem; transition: background-color 0.3s; cursor: pointer; width: 100%; text-align: left;">
+                                        <span class="material-icons">play_circle</span>
+                                        <span><?= Html::encode($video->getDisplayName()) ?></span>
+                                    </button>
+                                <?php 
+                                    endif;
+                                endforeach; ?>
+                            </div>
+                            <?php
+                        }
+                    } else {
+                        ?>
+                        <p style="color: var(--md-sys-color-on-surface-variant); text-align: center; padding: 2rem;">
+                            No hay vídeos disponibles para este producto.
+                        </p>
+                        <?php
+                    }
+                    ?>
+                </div>
             </div>
         </div>
     </div>
@@ -738,5 +842,31 @@ document.addEventListener('keydown', function(event) {
         closeAddToQuotationSuccessModal();
     }
 });
+
+function switchProductTab(tabName) {
+    // Hide all tab contents
+    const tabContents = document.querySelectorAll('.product-tab-content');
+    tabContents.forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    // Remove active class from all tabs
+    const tabs = document.querySelectorAll('.product-tab');
+    tabs.forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Show selected tab content
+    const selectedContent = document.getElementById('product-tab-' + tabName);
+    if (selectedContent) {
+        selectedContent.classList.add('active');
+    }
+    
+    // Add active class to selected tab
+    const selectedTab = document.querySelector('.product-tab[data-tab="' + tabName + '"]');
+    if (selectedTab) {
+        selectedTab.classList.add('active');
+    }
+}
 </script>
 

@@ -6,6 +6,8 @@ use Yii;
 use app\models\Product;
 use app\models\Category;
 use app\models\ProductSearch;
+use app\models\ProductTechnicalSpec;
+use app\models\ProductVideo;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\web\Response;
@@ -72,12 +74,23 @@ class ProductController extends Controller
         if ($model->load(Yii::$app->request->post())) {
             $model->imageFiles = UploadedFile::getInstances($model, 'imageFiles');
             
-            if ($model->upload() && $model->save(false)) {
-                // Save related products
-                $this->saveRelatedProducts($model);
-                
-                Yii::$app->session->setFlash('success', 'Producto creado exitosamente.');
-                return $this->redirect(['view', 'id' => $model->id]);
+            $uploadSuccess = true;
+            if ($model->imageFiles) {
+                $uploadSuccess = $model->upload();
+            }
+            
+            if ($uploadSuccess) {
+                if ($model->save(false)) {
+                    // Save related products
+                    $this->saveRelatedProducts($model);
+                    // Save technical specs
+                    $this->saveTechnicalSpecs($model);
+                    // Save videos
+                    $this->saveProductVideos($model);
+                    
+                    Yii::$app->session->setFlash('success', 'Producto creado exitosamente.');
+                    return $this->redirect(['view', 'id' => $model->id]);
+                }
             }
         }
 
@@ -110,12 +123,18 @@ class ProductController extends Controller
                 $uploadSuccess = $model->upload();
             }
             
-            if ($uploadSuccess && $model->save(false)) {
-                // Save related products
-                $this->saveRelatedProducts($model);
-                
-                Yii::$app->session->setFlash('success', 'Producto actualizado exitosamente.');
-                return $this->redirect(['view', 'id' => $model->id]);
+            if ($uploadSuccess) {
+                if ($model->save(false)) {
+                    // Save related products
+                    $this->saveRelatedProducts($model);
+                    // Save technical specs
+                    $this->saveTechnicalSpecs($model);
+                    // Save videos
+                    $this->saveProductVideos($model);
+                    
+                    Yii::$app->session->setFlash('success', 'Producto actualizado exitosamente.');
+                    return $this->redirect(['view', 'id' => $model->id]);
+                }
             }
         }
 
@@ -190,6 +209,114 @@ class ProductController extends Controller
                             'created_at' => time(),
                         ])
                         ->execute();
+                }
+            }
+        }
+    }
+
+    /**
+     * Save technical specs
+     */
+    protected function saveTechnicalSpecs($model)
+    {
+        $post = Yii::$app->request->post();
+        
+        // Update existing specs
+        if (isset($post['technical_specs']) && is_array($post['technical_specs'])) {
+            foreach ($post['technical_specs'] as $specId => $specData) {
+                if (isset($specData['delete']) && $specData['delete'] == '1') {
+                    // Delete spec
+                    $spec = ProductTechnicalSpec::findOne($specId);
+                    if ($spec) {
+                        // Delete file
+                        if ($spec->file_path && file_exists(Yii::getAlias('@webroot') . $spec->file_path)) {
+                            @unlink(Yii::getAlias('@webroot') . $spec->file_path);
+                        }
+                        $spec->delete();
+                    }
+                } elseif (isset($specData['id'])) {
+                    // Update existing spec
+                    $spec = ProductTechnicalSpec::findOne($specData['id']);
+                    if ($spec) {
+                        $spec->name = !empty($specData['name']) ? $specData['name'] : null;
+                        $spec->save(false);
+                    }
+                }
+            }
+        }
+        
+        // Add new specs
+        if (isset($post['technical_specs_new']) && is_array($post['technical_specs_new'])) {
+            foreach ($post['technical_specs_new'] as $index => $newSpecData) {
+                $file = UploadedFile::getInstanceByName('technical_specs_new[' . $index . '][file]');
+                if ($file) {
+                    $spec = new ProductTechnicalSpec();
+                    $spec->product_id = $model->id;
+                    $spec->file = $file;
+                    $spec->name = !empty($newSpecData['name']) ? $newSpecData['name'] : null;
+                    
+                    if ($spec->upload()) {
+                        $spec->save(false);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Save product videos
+     */
+    protected function saveProductVideos($model)
+    {
+        $post = Yii::$app->request->post();
+        
+        // Migrate old video_url to new table if exists
+        if (!$model->isNewRecord && $model->video_url) {
+            $existingVideos = ProductVideo::find()
+                ->where(['product_id' => $model->id])
+                ->count();
+            if ($existingVideos == 0) {
+                $oldVideo = new ProductVideo();
+                $oldVideo->product_id = $model->id;
+                $oldVideo->video_url = $model->video_url;
+                $oldVideo->name = null;
+                $oldVideo->save(false);
+            }
+        }
+        
+        // Update existing videos
+        if (isset($post['product_videos']) && is_array($post['product_videos'])) {
+            foreach ($post['product_videos'] as $videoId => $videoData) {
+                if (isset($videoData['delete']) && $videoData['delete'] == '1') {
+                    // Delete video
+                    $video = ProductVideo::findOne($videoId);
+                    if ($video) {
+                        $video->delete();
+                    }
+                } elseif (isset($videoData['id'])) {
+                    // Update existing video
+                    $video = ProductVideo::findOne($videoData['id']);
+                    if ($video) {
+                        $video->name = !empty($videoData['name']) ? $videoData['name'] : null;
+                        $video->video_url = $videoData['video_url'] ?? $video->video_url;
+                        $video->save(false);
+                    }
+                }
+            }
+        }
+        
+        // Add new videos
+        if (isset($post['product_videos_new']) && is_array($post['product_videos_new'])) {
+            foreach ($post['product_videos_new'] as $index => $newVideoData) {
+                if (!empty($newVideoData['video_url'])) {
+                    $video = new ProductVideo();
+                    $video->product_id = $model->id;
+                    $video->video_url = $newVideoData['video_url'];
+                    $video->name = !empty($newVideoData['name']) ? $newVideoData['name'] : null;
+                    
+                    if ($video->save(false)) {
+                        // Video saved successfully
+                    }
                 }
             }
         }

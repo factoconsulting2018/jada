@@ -66,7 +66,7 @@ $categoryColors = [
         <?php endif; ?>
         <div class="container">
             <h2 style="font-size: 2rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--md-sys-color-on-surface); text-align: center; width: 100%;">
-                Productos
+                Nuestros productos
             </h2>
             <div class="products-scroll-wrapper">
                 <button class="products-scroll-btn products-scroll-left" id="productsScrollLeft" aria-label="Productos anteriores">

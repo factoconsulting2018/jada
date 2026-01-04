@@ -19,6 +19,8 @@ use yii\helpers\Json;
  * @property string $image
  * @property string $images
  * @property string $video_url
+ * @property string $technical_specs_pdf
+ * @property string $technical_specs_pdf_name
  * @property integer $status
  * @property integer $created_at
  * @property integer $updated_at
@@ -34,6 +36,11 @@ class Product extends ActiveRecord
      * @var UploadedFile[]
      */
     public $imageFiles;
+    
+    /**
+     * @var UploadedFile
+     */
+    public $technicalSpecsPdfFile;
 
     /**
      * {@inheritdoc}
@@ -59,7 +66,9 @@ class Product extends ActiveRecord
             [['images'], 'string'],
             [['video_url'], 'string', 'max' => 500],
             [['video_url'], 'url', 'defaultScheme' => 'https'],
+            [['technical_specs_pdf', 'technical_specs_pdf_name'], 'string', 'max' => 255],
             [['imageFiles'], 'file', 'skipOnEmpty' => true, 'extensions' => 'png, jpg, jpeg, webp', 'maxSize' => 5 * 1024 * 1024, 'maxFiles' => 20, 'checkExtensionByMimeType' => false],
+            [['technicalSpecsPdfFile'], 'file', 'skipOnEmpty' => true, 'extensions' => 'pdf', 'maxSize' => 10 * 1024 * 1024, 'checkExtensionByMimeType' => false],
         ];
     }
 
@@ -78,6 +87,9 @@ class Product extends ActiveRecord
             'images' => 'Imágenes Adicionales',
             'imageFiles' => 'Imágenes',
             'video_url' => 'URL de Video (YouTube)',
+            'technical_specs_pdf' => 'Especificaciones Técnicas (PDF)',
+            'technical_specs_pdf_name' => 'Nombre del Documento',
+            'technicalSpecsPdfFile' => 'Especificaciones Técnicas (PDF)',
             'status' => 'Estado',
             'created_at' => 'Fecha de Creación',
             'updated_at' => 'Fecha de Actualización',
@@ -105,6 +117,26 @@ class Product extends ActiveRecord
     public function getCategory()
     {
         return $this->hasOne(Category::class, ['id' => 'category_id']);
+    }
+
+    /**
+     * Get technical specs
+     * @return \yii\db\ActiveQuery
+     */
+    public function getTechnicalSpecs()
+    {
+        return $this->hasMany(ProductTechnicalSpec::class, ['product_id' => 'id'])
+            ->orderBy(['order' => SORT_ASC, 'id' => SORT_ASC]);
+    }
+
+    /**
+     * Get videos
+     * @return \yii\db\ActiveQuery
+     */
+    public function getVideos()
+    {
+        return $this->hasMany(ProductVideo::class, ['product_id' => 'id'])
+            ->orderBy(['order' => SORT_ASC, 'id' => SORT_ASC]);
     }
 
     /**
@@ -243,6 +275,57 @@ class Product extends ActiveRecord
         $videoId = $this->getYouTubeVideoId();
         if ($videoId) {
             return 'https://www.youtube.com/embed/' . $videoId;
+        }
+        return null;
+    }
+
+    /**
+     * Upload technical specs PDF
+     */
+    public function uploadTechnicalSpecsPdf()
+    {
+        if ($this->technicalSpecsPdfFile) {
+            $path = Yii::getAlias('@webroot/uploads/products/pdfs/');
+            FileHelper::createDirectory($path);
+            
+            $fileName = uniqid() . '_' . time() . '.' . $this->technicalSpecsPdfFile->extension;
+            $filePath = $path . $fileName;
+            
+            if ($this->technicalSpecsPdfFile->saveAs($filePath)) {
+                // Delete old PDF if exists
+                if ($this->technical_specs_pdf && file_exists(Yii::getAlias('@webroot') . $this->technical_specs_pdf)) {
+                    @unlink(Yii::getAlias('@webroot') . $this->technical_specs_pdf);
+                }
+                
+                $this->technical_specs_pdf = '/uploads/products/pdfs/' . $fileName;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Get technical specs PDF URL
+     */
+    public function getTechnicalSpecsPdfUrl()
+    {
+        if ($this->technical_specs_pdf) {
+            return Yii::getAlias('@web') . $this->technical_specs_pdf;
+        }
+        return null;
+    }
+
+    /**
+     * Get technical specs PDF filename
+     */
+    public function getTechnicalSpecsPdfFilename()
+    {
+        // Return custom name if set, otherwise return the filename
+        if ($this->technical_specs_pdf_name) {
+            return $this->technical_specs_pdf_name;
+        }
+        if ($this->technical_specs_pdf) {
+            return basename($this->technical_specs_pdf);
         }
         return null;
     }
