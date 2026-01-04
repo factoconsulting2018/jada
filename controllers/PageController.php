@@ -26,6 +26,9 @@ class PageController extends Controller
             throw new NotFoundHttpException('La página solicitada no existe.');
         }
 
+        $this->view->title = $model->title;
+        $this->view->params['breadcrumbs'][] = $model->title;
+
         return $this->render('view', [
             'model' => $model,
         ]);

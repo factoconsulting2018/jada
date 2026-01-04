@@ -3,47 +3,44 @@
 /** @var yii\web\View $this */
 /** @var array $products */
 /** @var float $total */
+/** @var app\models\Quotation $model */
 
 use yii\helpers\Html;
 use yii\helpers\Url;
+use yii\widgets\ActiveForm;
 use app\helpers\PriceHelper;
 
 $this->title = 'Cotización';
-
-// Get success data from session
-$successData = Yii::$app->session->get('quotation_success_data');
 ?>
 <div class="quotation-cart">
     <div class="container" style="max-width: 1200px; margin: 2rem auto; padding: 0 1rem;">
         <h1 class="section-title">Mi Cotización</h1>
 
-        <?php if (empty($products)): ?>
-            <div class="empty-cart" style="text-align: center; padding: 4rem 2rem; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                <span class="material-icons" style="font-size: 64px; color: #ccc; margin-bottom: 1rem;">shopping_cart</span>
-                <h2 style="color: var(--md-sys-color-on-surface-variant); margin-bottom: 1rem;">Tu carrito de cotización está vacío</h2>
-                <p style="color: var(--md-sys-color-on-surface-variant); margin-bottom: 2rem;">Agrega productos usando el buscador para crear una cotización.</p>
-                <a href="<?= Url::to(['/products']) ?>" class="btn btn-primary">Ver Productos</a>
-            </div>
-        <?php else: ?>
-            <div style="display: grid; grid-template-columns: 1fr 350px; gap: 2rem; margin-top: 2rem;">
-                <!-- Products List -->
-                <div class="cart-products" style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                    <h2 style="margin-top: 0; margin-bottom: 1.5rem;">Productos</h2>
-                    
-                    <div id="product-search-container" style="margin-bottom: 1.5rem;">
-                        <div style="position: relative;">
-                            <input type="text" 
-                                   id="product-search-input" 
-                                   class="form-control" 
-                                   placeholder="Buscar productos para agregar..." 
-                                   autocomplete="off"
-                                   style="padding-right: 3rem;">
-                            <span class="material-icons" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); color: #666; pointer-events: none;">search</span>
-                            <div id="product-search-results" class="product-search-results" style="display: none;"></div>
-                        </div>
+        <div style="display: grid; grid-template-columns: 1fr 350px; gap: 2rem; margin-top: 2rem;">
+            <!-- Products List -->
+            <div class="cart-products" style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <h2 style="margin-top: 0; margin-bottom: 1.5rem;">Productos</h2>
+                
+                <div id="product-search-container" style="margin-bottom: 1.5rem;">
+                    <div style="position: relative;">
+                        <input type="text" 
+                               id="product-search-input" 
+                               class="form-control" 
+                               placeholder="Buscar productos para agregar..." 
+                               autocomplete="off"
+                               style="padding-right: 3rem;">
+                        <span class="material-icons" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); color: #666; pointer-events: none;">search</span>
+                        <div id="product-search-results" class="product-search-results" style="display: none;"></div>
                     </div>
+                </div>
 
-                    <div id="cart-items">
+                <div id="cart-items">
+                    <?php if (empty($products)): ?>
+                        <div class="empty-cart-message" style="text-align: center; padding: 2rem; color: var(--md-sys-color-on-surface-variant);">
+                            <span class="material-icons" style="font-size: 48px; color: #ccc; margin-bottom: 1rem; display: block;">shopping_cart</span>
+                            <p style="margin: 0;">Tu carrito de cotización está vacío. Agrega productos usando el buscador.</p>
+                        </div>
+                    <?php else: ?>
                         <?php foreach ($products as $item): ?>
                             <div class="cart-item" data-product-id="<?= $item['product']->id ?>" style="display: flex; gap: 1rem; padding: 1rem; border-bottom: 1px solid #e0e0e0; align-items: center;">
                                 <div style="flex-shrink: 0;">
@@ -100,11 +97,45 @@ $successData = Yii::$app->session->get('quotation_success_data');
                                 </button>
                             </div>
                         <?php endforeach; ?>
-                    </div>
+                    <?php endif; ?>
                 </div>
+            </div>
 
                 <!-- Summary -->
                 <div class="cart-summary" style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); height: fit-content;">
+                    <!-- Form -->
+                    <div class="quotation-form-container" style="margin-bottom: 2rem; padding-bottom: 2rem; border-bottom: 1px solid #e0e0e0;">
+                        <h2 style="margin-top: 0; margin-bottom: 1.5rem;">Datos de Contacto</h2>
+
+                        <?php if (Yii::$app->session->hasFlash('error')): ?>
+                            <div class="alert alert-error" style="padding: 1rem; margin-bottom: 1rem; background: #ffebee; color: #c62828; border-radius: 4px;">
+                                <?= Yii::$app->session->getFlash('error') ?>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php $form = ActiveForm::begin([
+                            'id' => 'quotation-submit-form',
+                            'options' => ['class' => 'quotation-form'],
+                        ]); ?>
+
+                        <?= $form->field($model, 'id_type')->dropDownList([
+                            'fisico' => 'Físico',
+                            'juridico' => 'Jurídico',
+                        ], ['prompt' => 'Seleccione...', 'class' => 'form-control']) ?>
+
+                        <?= $form->field($model, 'id_number')->textInput(['maxlength' => true, 'class' => 'form-control', 'placeholder' => 'Cédula']) ?>
+
+                        <?= $form->field($model, 'full_name')->textInput(['maxlength' => true, 'class' => 'form-control', 'placeholder' => 'Nombre completo']) ?>
+
+                        <?= $form->field($model, 'email')->textInput(['maxlength' => true, 'type' => 'email', 'class' => 'form-control', 'placeholder' => 'correo@ejemplo.com']) ?>
+
+                        <?= $form->field($model, 'whatsapp')->textInput(['maxlength' => true, 'class' => 'form-control', 'placeholder' => 'Número de WhatsApp']) ?>
+
+                        <div id="form-errors" style="display: none; padding: 1rem; margin-bottom: 1rem; background: #ffebee; color: #c62828; border-radius: 4px;"></div>
+
+                        <?php ActiveForm::end(); ?>
+                    </div>
+
                     <h2 style="margin-top: 0; margin-bottom: 1.5rem;">Resumen</h2>
                     
                     <div style="margin-bottom: 1.5rem;">
@@ -135,152 +166,13 @@ $successData = Yii::$app->session->get('quotation_success_data');
                         </div>
                     </div>
 
-                    <a href="<?= Url::to(['/quotation/submit']) ?>" class="btn btn-primary" style="width: 100%; display: block; text-align: center; padding: 0.75rem; margin-top: 1.5rem;">
-                        Continuar con Cotización
-                    </a>
+                    <button type="submit" form="quotation-submit-form" class="btn btn-primary" id="submit-quotation-btn" style="width: 100%; display: block; text-align: center; padding: 0.75rem; margin-top: 1.5rem;" <?= empty($products) ? 'disabled' : '' ?>>
+                        Enviar Cotización
+                    </button>
                 </div>
             </div>
-        <?php endif; ?>
     </div>
 </div>
-
-<?php if ($successData): ?>
-<!-- Success Modal -->
-<div id="successModal" class="success-modal" style="display: block;">
-    <div class="success-modal-content">
-        <div class="success-modal-header">
-            <span class="material-icons" style="font-size: 48px; color: #4caf50; margin-bottom: 1rem;">check_circle</span>
-            <h2 style="margin: 0; color: #4caf50;">¡Cotización Enviada con Éxito!</h2>
-            <p style="margin: 0.5rem 0 0 0; color: var(--md-sys-color-on-surface-variant);">Cotización #<?= $successData['quotation_id'] ?></p>
-        </div>
-        <div class="success-modal-body">
-            <p style="margin-bottom: 1.5rem;">Recibirá un correo electrónico con los detalles de su cotización.</p>
-            
-            <div style="margin-bottom: 1.5rem;">
-                <h3 style="margin-top: 0; font-size: 1rem;">Datos de Contacto</h3>
-                <p style="margin: 0.25rem 0;"><strong>Nombre:</strong> <?= Html::encode($successData['full_name']) ?></p>
-                <p style="margin: 0.25rem 0;"><strong>Email:</strong> <?= Html::encode($successData['email']) ?></p>
-                <p style="margin: 0.25rem 0;"><strong>WhatsApp:</strong> <?= Html::encode($successData['whatsapp']) ?></p>
-            </div>
-
-            <div style="margin-bottom: 1.5rem;">
-                <h3 style="margin-top: 0; font-size: 1rem;">Resumen de Productos</h3>
-                <div style="max-height: 200px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 8px; padding: 0.5rem;">
-                    <?php foreach ($successData['products'] as $product): ?>
-                        <div style="display: flex; justify-content: space-between; padding: 0.5rem; border-bottom: 1px solid #f0f0f0;">
-                            <span><?= Html::encode($product['product_name']) ?> (x<?= $product['quantity'] ?>)</span>
-                            <span style="font-weight: 500;">₡<?= number_format($product['subtotal'], 2, '.', ',') ?></span>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-top: 1rem; padding-top: 1rem; border-top: 2px solid #e0e0e0;">
-                    <span style="font-weight: 500; font-size: 1.125rem;">Total:</span>
-                    <span style="font-weight: 500; font-size: 1.25rem; color: var(--md-sys-color-primary);">
-                        ₡<?= number_format($successData['total'], 2, '.', ',') ?>
-                    </span>
-                </div>
-            </div>
-        </div>
-        <div class="success-modal-footer">
-            <button type="button" onclick="closeSuccessModal()" class="btn btn-primary" style="width: 100%;">
-                Cerrar
-            </button>
-        </div>
-    </div>
-</div>
-
-<style>
-.success-modal {
-    display: none;
-    position: fixed;
-    z-index: 3000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0,0,0,0.7);
-}
-
-.success-modal-content {
-    background-color: white;
-    margin: 5% auto;
-    padding: 0;
-    border-radius: 12px;
-    width: 90%;
-    max-width: 600px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    animation: slideDown 0.3s ease;
-}
-
-@keyframes slideDown {
-    from {
-        transform: translateY(-50px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-.success-modal-header {
-    padding: 2rem;
-    text-align: center;
-    border-bottom: 1px solid #e0e0e0;
-}
-
-.success-modal-body {
-    padding: 2rem;
-    max-height: 60vh;
-    overflow-y: auto;
-}
-
-.success-modal-footer {
-    padding: 1.5rem 2rem;
-    border-top: 1px solid #e0e0e0;
-}
-
-@media (max-width: 768px) {
-    .success-modal-content {
-        width: 95%;
-        margin: 10% auto;
-    }
-    
-    .success-modal-header,
-    .success-modal-body,
-    .success-modal-footer {
-        padding: 1.5rem;
-    }
-}
-</style>
-
-<script>
-function closeSuccessModal() {
-    document.getElementById('successModal').style.display = 'none';
-}
-
-// Close modal when clicking outside
-window.onclick = function(event) {
-    const modal = document.getElementById('successModal');
-    if (event.target == modal) {
-        closeSuccessModal();
-    }
-}
-
-// Close modal with Escape key
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape') {
-        closeSuccessModal();
-    }
-});
-</script>
-
-<?php 
-// Clear success data from session after displaying
-Yii::$app->session->remove('quotation_success_data');
-endif; 
-?>
 
 <style>
 .product-search-results {
@@ -514,5 +406,87 @@ function escapeHtml(text) {
     };
     return text.replace(/[&<>"']/g, function(m) { return map[m]; });
 }
+
+// Form submission handler
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('quotation-submit-form');
+    const submitBtn = document.getElementById('submit-quotation-btn');
+    const errorsDiv = document.getElementById('form-errors');
+    
+    if (form && submitBtn) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Hide previous errors
+            if (errorsDiv) {
+                errorsDiv.style.display = 'none';
+                errorsDiv.innerHTML = '';
+            }
+            
+            // Disable submit button
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Enviando...';
+            
+            // Get form data
+            const formData = new FormData(form);
+            
+            // Send AJAX request
+            fetch('<?= Url::to(['submit']) ?>', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                }
+            })
+            .then(response => {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return response.json();
+                } else {
+                    throw new Error('La respuesta no es JSON.');
+                }
+            })
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    alert('Su cotización fue enviada con éxito.');
+                    // Redirect to products page
+                    window.location.href = '<?= Url::to(['/products']) ?>';
+                } else {
+                    // Show errors
+                    if (errorsDiv) {
+                        if (data.errors) {
+                            let errorHtml = '<strong>Por favor, corrija los siguientes errores:</strong><ul style="margin: 0.5rem 0 0 0; padding-left: 1.5rem;">';
+                            for (let field in data.errors) {
+                                data.errors[field].forEach(error => {
+                                    errorHtml += '<li>' + error + '</li>';
+                                });
+                            }
+                            errorHtml += '</ul>';
+                            errorsDiv.innerHTML = errorHtml;
+                            errorsDiv.style.display = 'block';
+                        } else {
+                            errorsDiv.innerHTML = '<strong>Error:</strong> ' + (data.message || 'Ocurrió un error al enviar la cotización.');
+                            errorsDiv.style.display = 'block';
+                        }
+                    }
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Enviar Cotización';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                if (errorsDiv) {
+                    errorsDiv.innerHTML = '<strong>Error:</strong> Ocurrió un error al enviar la cotización. Por favor, intente nuevamente.';
+                    errorsDiv.style.display = 'block';
+                }
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Enviar Cotización';
+            });
+            
+            return false;
+        });
+    }
+});
 </script>
 

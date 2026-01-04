@@ -65,6 +65,22 @@ $this->registerMetaTag(['name' => 'viewport', 'content' => 'width=device-width, 
 </header>
 
 <main>
+    <?php if (isset($this->params['breadcrumbs']) && !empty($this->params['breadcrumbs'])): ?>
+        <div class="breadcrumbs-container">
+            <?= \yii\widgets\Breadcrumbs::widget([
+                'links' => isset($this->params['breadcrumbs']) ? $this->params['breadcrumbs'] : [],
+                'homeLink' => [
+                    'label' => 'Inicio',
+                    'url' => Yii::$app->homeUrl,
+                ],
+                'options' => [
+                    'class' => 'breadcrumbs',
+                ],
+                'itemTemplate' => "<li class=\"breadcrumb-item\">{link}</li>\n",
+                'activeItemTemplate' => "<li class=\"breadcrumb-item active\">{link}</li>\n",
+            ]) ?>
+        </div>
+    <?php endif; ?>
     <?= $content ?>
 </main>
 

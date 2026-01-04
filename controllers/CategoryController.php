@@ -44,6 +44,16 @@ class CategoryController extends Controller
             ->where(['status' => Category::STATUS_ACTIVE])
             ->all();
 
+        // Breadcrumbs
+        $this->view->params['breadcrumbs'][] = ['label' => 'Productos', 'url' => ['/products']];
+        if ($category->parent_id) {
+            $parent = Category::findOne($category->parent_id);
+            if ($parent) {
+                $this->view->params['breadcrumbs'][] = ['label' => $parent->name, 'url' => ['/category/view', 'id' => $parent->id]];
+            }
+        }
+        $this->view->params['breadcrumbs'][] = $category->name;
+
         return $this->render('view', [
             'category' => $category,
             'dataProvider' => $dataProvider,

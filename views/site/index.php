@@ -7,16 +7,13 @@ use yii\helpers\Url;
 use app\models\Banner;
 use app\models\Product;
 use app\models\Category;
+use app\models\ParallaxBackground;
+use app\models\SponsorBanner;
 use app\helpers\PriceHelper;
 
 $this->title = 'Inicio';
 
 $banners = Banner::getActiveBanners();
-$featuredProducts = Product::find()
-    ->where(['status' => Product::STATUS_ACTIVE])
-    ->orderBy(['created_at' => SORT_DESC])
-    ->limit(20)
-    ->all();
 
 $categories = Category::find()
     ->where(['status' => Category::STATUS_ACTIVE])
@@ -61,34 +58,21 @@ $categoryColors = [
     </div>
     <?php endif; ?>
 
-    <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 2rem;">
-        <?php if (!empty($categories)): ?>
-            <section class="categories-section" style="margin-bottom: 3rem;">
-                <h2 style="font-size: 2rem; font-weight: 400; margin-bottom: 1.5rem; color: var(--md-sys-color-on-surface);">
-                    Categorías
-                </h2>
-                <div class="category-tags" id="categoryTags">
-                    <span class="category-tag active" data-category-id="all" style="background-color: var(--md-sys-color-primary); color: white;">
-                        Todas
-                    </span>
-                    <?php foreach ($categories as $index => $category): ?>
-                        <?php 
-                        $colorIndex = $index % count($categoryColors);
-                        $color = $categoryColors[$colorIndex];
-                        ?>
-                        <span class="category-tag" data-category-id="<?= $category->id ?>" style="background-color: <?= $color ?>; color: white;">
-                            <?= Html::encode($category->name) ?>
-                        </span>
-                    <?php endforeach; ?>
-                </div>
-            </section>
+    <section class="products-section parallax-section" data-section="products">
+        <?php if (!empty($parallaxBackgrounds['products'])): ?>
+            <?php foreach ($parallaxBackgrounds['products'] as $bg): ?>
+                <div class="parallax-background" data-image="<?= Html::encode($bg->imageUrl) ?>" style="background-image: url('<?= Html::encode($bg->imageUrl) ?>');"></div>
+            <?php endforeach; ?>
         <?php endif; ?>
-
-        <section class="products-section">
-            <h2 style="font-size: 2rem; font-weight: 400; margin-bottom: 1.5rem; color: var(--md-sys-color-on-surface);">
+        <div class="container">
+            <h2 style="font-size: 2rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--md-sys-color-on-surface); text-align: center; width: 100%;">
                 Productos
             </h2>
-            <div class="products-grid" id="productsGrid">
+            <div class="products-scroll-wrapper">
+                <button class="products-scroll-btn products-scroll-left" id="productsScrollLeft" aria-label="Productos anteriores">
+                    <span class="material-icons">chevron_left</span>
+                </button>
+                <div class="products-grid" id="productsGrid">
                 <?php if (!empty($featuredProducts)): ?>
                     <?php foreach ($featuredProducts as $product): ?>
                         <a href="<?= Url::to(['/product/view', 'id' => $product->id]) ?>" class="product-card" data-category-id="<?= $product->category_id ?>">
@@ -121,91 +105,447 @@ $categoryColors = [
                         No hay productos disponibles.
                     </p>
                 <?php endif; ?>
+                </div>
+                <button class="products-scroll-btn products-scroll-right" id="productsScrollRight" aria-label="Siguientes productos">
+                    <span class="material-icons">chevron_right</span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <?php if (!empty($categories)): ?>
+        <section class="categories-section parallax-section" data-section="categories">
+            <?php if (!empty($parallaxBackgrounds['categories'])): ?>
+                <?php foreach ($parallaxBackgrounds['categories'] as $bg): ?>
+                    <div class="parallax-background" data-image="<?= Html::encode($bg->imageUrl) ?>" style="background-image: url('<?= Html::encode($bg->imageUrl) ?>');"></div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+            <div class="container">
+                <h2 style="font-size: 2rem; font-weight: 400; margin-bottom: 1.5rem; color: var(--md-sys-color-on-surface);">
+                    Categorías
+                </h2>
+                <div class="category-grid" id="categoryTags">
+                    <div class="category-card active" data-category-id="all">
+                        <div class="category-card-image">
+                            <span class="material-icons" style="font-size: 48px; color: var(--md-sys-color-primary);">apps</span>
+                        </div>
+                        <div class="category-card-content">
+                            <h3 class="category-card-title">Todas</h3>
+                        </div>
+                    </div>
+                    <?php foreach ($categories as $index => $category): ?>
+                        <?php 
+                        $colorIndex = $index % count($categoryColors);
+                        $color = $categoryColors[$colorIndex];
+                        ?>
+                        <div class="category-card" data-category-id="<?= $category->id ?>" style="border-top: 4px solid <?= $color ?>;">
+                            <div class="category-card-image">
+                                <?php if ($category->image): ?>
+                                    <img src="<?= Html::encode($category->imageUrl) ?>" alt="<?= Html::encode($category->name) ?>">
+                                <?php else: ?>
+                                    <span class="material-icons" style="font-size: 48px; color: <?= $color ?>;">category</span>
+                                <?php endif; ?>
+                            </div>
+                            <div class="category-card-content">
+                                <h3 class="category-card-title"><?= Html::encode($category->name) ?></h3>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
             </div>
         </section>
-    </div>
+    <?php endif; ?>
+
+    <?php if (!empty($sponsorBanners)): ?>
+        <section class="sponsors-section">
+            <div class="container">
+                <div class="sponsors-grid">
+                    <?php foreach ($sponsorBanners as $sponsor): ?>
+                        <?php if ($sponsor->link): ?>
+                            <a href="<?= Html::encode($sponsor->link) ?>" target="_blank" rel="noopener noreferrer" class="sponsor-item">
+                                <img src="<?= Html::encode($sponsor->imageUrl) ?>" alt="<?= Html::encode($sponsor->title ?: 'Patrocinador') ?>">
+                            </a>
+                        <?php else: ?>
+                            <div class="sponsor-item">
+                                <img src="<?= Html::encode($sponsor->imageUrl) ?>" alt="<?= Html::encode($sponsor->title ?: 'Patrocinador') ?>">
+                            </div>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </section>
+    <?php endif; ?>
 </div>
 
 <style>
-.category-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-bottom: 2rem;
+.parallax-section {
+    position: relative;
+    overflow: hidden;
 }
 
-.category-tag {
-    display: inline-block;
-    padding: 0.625rem 1.25rem;
-    border-radius: 24px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    border: none;
-    user-select: none;
+.parallax-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    z-index: -1;
+    opacity: 0.3;
+    pointer-events: none;
 }
 
-.category-tag:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+.products-section,
+.categories-section {
+    position: relative;
+    padding: 2rem 0;
+    width: 100%;
 }
 
-.category-tag.active {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    transform: scale(1.05);
+.sponsors-section {
+    padding: 3rem 0;
+    background-color: #f9f9f9;
 }
 
-.products-grid {
+.sponsors-section .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.sponsors-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 2rem;
-    margin-bottom: 3rem;
+    align-items: center;
+}
+
+.sponsor-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    text-decoration: none;
+    height: 120px;
+    overflow: hidden;
+}
+
+.sponsor-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.sponsor-item img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.products-section .container,
+.categories-section .container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.products-section > .container > h2,
+.categories-section > .container > h2 {
+    position: relative;
+    z-index: 1;
+}
+
+.products-grid,
+.category-grid {
+    position: relative;
+    z-index: 1;
+}
+
+.category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.category-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    user-select: none;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.category-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.category-card.active {
+    box-shadow: 0 4px 16px rgba(103, 80, 164, 0.3);
+    border-color: var(--md-sys-color-primary);
+    background-color: rgba(103, 80, 164, 0.05);
+}
+
+.category-card-image {
+    width: 100%;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f9f9f9;
+    overflow: hidden;
+}
+
+.category-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.category-card-content {
+    padding: 0.75rem 1rem;
+    text-align: center;
+}
+
+.category-card-title {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: var(--md-sys-color-on-surface);
+}
+
+.products-scroll-wrapper {
+    position: relative;
+    width: 100%;
+    margin: 0 auto 3rem;
+}
+
+.products-grid {
+    display: flex;
+    gap: 1.5rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 1rem 0 2rem;
+    width: 100%;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(103, 80, 164, 0.3) transparent;
+}
+
+.products-scroll-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.95);
+    border: none;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+    transition: all 0.3s ease;
+    padding: 0;
+}
+
+.products-scroll-btn:hover {
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.products-scroll-btn:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+.products-scroll-btn .material-icons {
+    color: var(--md-sys-color-primary);
+    font-size: 32px;
+}
+
+.products-scroll-left {
+    left: -24px;
+}
+
+.products-scroll-right {
+    right: -24px;
+}
+
+.products-scroll-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.products-grid::-webkit-scrollbar {
+    height: 8px;
+}
+
+.products-grid::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.products-grid::-webkit-scrollbar-thumb {
+    background-color: rgba(103, 80, 164, 0.3);
+    border-radius: 4px;
+}
+
+.products-grid::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(103, 80, 164, 0.5);
 }
 
 .products-grid .product-card {
     opacity: 1;
     transition: opacity 0.3s ease, transform 0.3s ease;
+    flex: 0 0 280px;
+    min-width: 280px;
+    max-width: 280px;
 }
 
 .products-grid .product-card.hidden {
     display: none;
 }
 
-@media (max-width: 1024px) {
-    .products-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
-
 @media (max-width: 768px) {
-    .category-tags {
-        gap: 0.5rem;
+    .category-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 0.75rem;
     }
     
-    .category-tag {
-        padding: 0.5rem 1rem;
-        font-size: 0.8125rem;
+    .category-card-image {
+        height: 100px;
+    }
+    
+    .category-card-image .material-icons {
+        font-size: 40px !important;
+    }
+    
+    .category-card-content {
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .category-card-title {
+        font-size: 0.875rem;
+    }
+    
+    .products-scroll-wrapper {
+        margin: 0 auto 3rem;
+        padding: 0 1rem;
     }
     
     .products-grid {
-        grid-template-columns: repeat(2, 1fr);
         gap: 1rem;
+        padding: 0.5rem 0 1.5rem;
+    }
+    
+    .products-grid .product-card {
+        flex: 0 0 240px;
+        min-width: 240px;
+        max-width: 240px;
+    }
+    
+    .products-scroll-btn {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .products-scroll-btn .material-icons {
+        font-size: 28px;
+    }
+    
+    .products-scroll-left {
+        left: -12px;
+    }
+    
+    .products-scroll-right {
+        right: -12px;
     }
 }
 
 @media (max-width: 480px) {
-    .products-grid {
-        grid-template-columns: 1fr;
+    .products-grid .product-card {
+        flex: 0 0 200px;
+        min-width: 200px;
+        max-width: 200px;
     }
 }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const categoryTags = document.querySelectorAll('.category-tag');
+    // Parallax effect
+    const parallaxSections = document.querySelectorAll('.parallax-section');
+    
+    function updateParallax() {
+        parallaxSections.forEach(section => {
+            const rect = section.getBoundingClientRect();
+            const parallaxBg = section.querySelector('.parallax-background');
+            
+            if (parallaxBg && rect.top < window.innerHeight && rect.bottom > 0) {
+                const scrolled = window.pageYOffset;
+                const sectionTop = rect.top + scrolled;
+                const rate = (scrolled - sectionTop) * 0.3;
+                parallaxBg.style.transform = 'translateY(' + rate + 'px)';
+            }
+        });
+    }
+    
+    window.addEventListener('scroll', updateParallax);
+    updateParallax();
+    
+    // Products scroll buttons
     const productsGrid = document.getElementById('productsGrid');
+    const productsScrollLeft = document.getElementById('productsScrollLeft');
+    const productsScrollRight = document.getElementById('productsScrollRight');
+    
+    if (productsGrid && productsScrollLeft && productsScrollRight) {
+        function updateScrollButtons() {
+            const scrollLeft = productsGrid.scrollLeft;
+            const scrollWidth = productsGrid.scrollWidth;
+            const clientWidth = productsGrid.clientWidth;
+            
+            productsScrollLeft.disabled = scrollLeft === 0;
+            productsScrollRight.disabled = scrollLeft >= scrollWidth - clientWidth - 10;
+        }
+        
+        productsScrollLeft.addEventListener('click', function() {
+            productsGrid.scrollBy({
+                left: -300,
+                behavior: 'smooth'
+            });
+        });
+        
+        productsScrollRight.addEventListener('click', function() {
+            productsGrid.scrollBy({
+                left: 300,
+                behavior: 'smooth'
+            });
+        });
+        
+        productsGrid.addEventListener('scroll', updateScrollButtons);
+        updateScrollButtons();
+    }
+    
+    const categoryTags = document.querySelectorAll('.category-card');
     let currentCategoryId = 'all';
     
     categoryTags.forEach(tag => {

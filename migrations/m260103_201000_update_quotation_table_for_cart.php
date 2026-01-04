@@ -51,3 +51,4 @@ class m260103_201000_update_quotation_table_for_cart extends Migration
     }
 }
 
+

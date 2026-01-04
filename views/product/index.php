@@ -13,8 +13,13 @@ use app\helpers\PriceHelper;
 $this->title = 'Productos';
 ?>
 <div class="product-index">
-    <div class="products-section">
-        <h1 class="section-title">Catálogo de Productos</h1>
+    <div class="products-section parallax-section" data-section="products_page">
+        <?php if (!empty($parallaxBackgrounds)): ?>
+            <?php foreach ($parallaxBackgrounds as $bg): ?>
+                <div class="parallax-background" data-image="<?= Html::encode($bg->imageUrl) ?>" style="background-image: url('<?= Html::encode($bg->imageUrl) ?>');"></div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+        <h1 class="section-title" style="font-size: 2rem; font-weight: 500; margin-bottom: 2rem; text-align: center;">Catálogo de Productos</h1>
 
         <div style="display: grid; grid-template-columns: 250px 1fr; gap: 2rem; margin-bottom: 2rem;">
             <?php if (!empty($categories)): ?>
@@ -252,4 +257,71 @@ document.addEventListener('DOMContentLoaded', function() {
          }
      }
      </style>
+
+     <style>
+     .parallax-section {
+         position: relative;
+         overflow: hidden;
+         width: 100%;
+     }
+
+     .product-index .products-section {
+         position: relative !important;
+         width: 100% !important;
+         max-width: none !important;
+         margin: 0 !important;
+         padding: 2rem 0;
+     }
+
+     .product-index .parallax-background {
+         position: absolute;
+         top: 0;
+         left: 0;
+         right: 0;
+         width: 100%;
+         height: 100%;
+         min-height: 100%;
+         background-size: cover;
+         background-position: center center;
+         background-repeat: no-repeat;
+         z-index: -1;
+         opacity: 0.3;
+         pointer-events: none;
+     }
+
+     .product-index .products-section > h1,
+     .product-index .products-section > div {
+         max-width: 1200px;
+         margin-left: auto;
+         margin-right: auto;
+         padding-left: 2rem;
+         padding-right: 2rem;
+         position: relative;
+         z-index: 1;
+     }
+     </style>
+
+     <script>
+     document.addEventListener('DOMContentLoaded', function() {
+         // Parallax effect for products page
+         const parallaxSections = document.querySelectorAll('.parallax-section');
+         
+         function updateParallax() {
+             parallaxSections.forEach(section => {
+                 const rect = section.getBoundingClientRect();
+                 const parallaxBg = section.querySelector('.parallax-background');
+                 
+                 if (parallaxBg && rect.top < window.innerHeight && rect.bottom > 0) {
+                     const scrolled = window.pageYOffset;
+                     const sectionTop = rect.top + scrolled;
+                     const rate = (scrolled - sectionTop) * 0.3;
+                     parallaxBg.style.transform = 'translateY(' + rate + 'px)';
+                 }
+             });
+         }
+         
+         window.addEventListener('scroll', updateParallax);
+         updateParallax();
+     });
+     </script>
 

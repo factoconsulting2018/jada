@@ -38,8 +38,12 @@ $this->params['breadcrumbs'][] = $this->title;
         <?= GridView::widget([
             'dataProvider' => $dataProvider,
             'tableOptions' => ['class' => 'admin-table'],
+            'summary' => 'Mostrando {begin}-{end} de {totalCount} elementos.',
             'columns' => [
-                ['class' => 'yii\grid\SerialColumn'],
+                [
+                    'class' => 'yii\grid\SerialColumn',
+                    'contentOptions' => ['style' => 'text-align: left;'],
+                ],
                 [
                     'label' => 'Productos',
                     'value' => function ($model) {
@@ -49,25 +53,36 @@ $this->params['breadcrumbs'][] = $this->title;
                         }
                         return !empty($products) ? implode(', ', $products) : 'Sin productos';
                     },
+                    'contentOptions' => ['style' => 'text-align: left;'],
                 ],
                 [
                     'label' => 'Total',
                     'value' => function ($model) {
                         return '₡' . number_format($model->getTotal(), 2, '.', ',');
                     },
+                    'contentOptions' => ['style' => 'text-align: left;'],
                 ],
                 [
                     'attribute' => 'full_name',
                     'label' => 'Cliente',
+                    'contentOptions' => ['style' => 'text-align: left;'],
                 ],
-                'email:email',
-                'whatsapp',
+                [
+                    'attribute' => 'email',
+                    'format' => 'email',
+                    'contentOptions' => ['style' => 'text-align: left;'],
+                ],
+                [
+                    'attribute' => 'whatsapp',
+                    'contentOptions' => ['style' => 'text-align: left;'],
+                ],
                 [
                     'attribute' => 'id_type',
                     'label' => 'Tipo ID',
                     'value' => function ($model) {
                         return $model->getIdTypeLabel();
                     },
+                    'contentOptions' => ['style' => 'text-align: left;'],
                 ],
                 [
                     'attribute' => 'status',
@@ -75,16 +90,39 @@ $this->params['breadcrumbs'][] = $this->title;
                     'value' => function ($model) {
                         return $model->getStatusLabel();
                     },
+                    'contentOptions' => ['style' => 'text-align: left;'],
                 ],
                 [
                     'attribute' => 'created_at',
                     'label' => 'Fecha',
-                    'format' => 'datetime',
+                    'value' => function ($model) {
+                        if ($model->created_at) {
+                            $meses = [
+                                'January' => 'Enero', 'February' => 'Febrero', 'March' => 'Marzo',
+                                'April' => 'Abril', 'May' => 'Mayo', 'June' => 'Junio',
+                                'July' => 'Julio', 'August' => 'Agosto', 'September' => 'Septiembre',
+                                'October' => 'Octubre', 'November' => 'Noviembre', 'December' => 'Diciembre'
+                            ];
+                            // Handle both timestamp and datetime string
+                            $timestamp = is_numeric($model->created_at) ? (int)$model->created_at : strtotime($model->created_at);
+                            if ($timestamp === false) {
+                                return $model->created_at;
+                            }
+                            $dateStr = date('F j, Y g:i:s A', $timestamp);
+                            foreach ($meses as $en => $es) {
+                                $dateStr = str_replace($en, $es, $dateStr);
+                            }
+                            return $dateStr;
+                        }
+                        return '';
+                    },
+                    'contentOptions' => ['style' => 'text-align: left;'],
                 ],
                 [
                     'class' => 'yii\grid\ActionColumn',
                     'header' => 'Acciones',
                     'template' => '{view} {update} {delete}',
+                    'contentOptions' => ['style' => 'text-align: left;'],
                     'buttons' => [
                         'view' => function ($url, $model) {
                             return Html::a('<span class="material-icons">visibility</span>', $url, ['title' => 'Ver']);

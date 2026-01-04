@@ -119,7 +119,7 @@ $mainImage = !empty($allImages) ? $allImages[0] : ($model->imageUrl ?? '');
                     Contactar por WhatsApp
                 </a>
                 <button type="button" class="quote-button" onclick="addProductToQuotation(<?= $model->id ?>)">
-                    <span class="material-icons" style="margin-right: 8px; vertical-align: middle;">request_quote</span>
+                    <span class="material-icons" style="margin-right: 8px; vertical-align: middle;">description</span>
                     Agregar a Cotización
                 </button>
             </div>
@@ -128,7 +128,7 @@ $mainImage = !empty($allImages) ? $allImages[0] : ($model->imageUrl ?? '');
 
     <?php if (!empty($relatedProducts)): ?>
     <div class="products-section">
-        <h2 class="section-title">Tal vez te interese</h2>
+        <h2 class="section-title">Contenido relacionado</h2>
         <div class="products-grid">
             <?php foreach ($relatedProducts as $product): ?>
             <a href="<?= Url::to(['/product/view', 'id' => $product->id]) ?>" class="product-card">
@@ -162,6 +162,29 @@ $mainImage = !empty($allImages) ? $allImages[0] : ($model->imageUrl ?? '');
         </div>
     </div>
     <?php endif; ?>
+</div>
+
+<!-- Modal de Éxito al Agregar a Cotización -->
+<div id="addToQuotationSuccessModal" class="success-modal" style="display: none;">
+    <div class="success-modal-content">
+        <div class="success-modal-header">
+            <span class="material-icons" style="font-size: 64px; color: #4caf50; margin-bottom: 1rem;">check_circle</span>
+            <h2 style="margin: 0; color: #4caf50;">¡Producto Agregado!</h2>
+        </div>
+        <div class="success-modal-body">
+            <p style="margin: 0; font-size: 1rem; color: var(--md-sys-color-on-surface);">
+                Se agregó el producto con éxito a la cotización.
+            </p>
+        </div>
+        <div class="success-modal-footer" style="display: flex; gap: 1rem;">
+            <a href="<?= \yii\helpers\Url::to(['/quotation/index']) ?>" class="btn btn-primary" style="flex: 1; text-align: center; text-decoration: none;">
+                Cotizaciones
+            </a>
+            <button type="button" onclick="closeAddToQuotationSuccessModal()" class="btn btn-secondary" style="flex: 1;">
+                Cerrar
+            </button>
+        </div>
+    </div>
 </div>
 
 <!-- Modal de Cotización -->
@@ -215,7 +238,7 @@ $mainImage = !empty($allImages) ? $allImages[0] : ($model->imageUrl ?? '');
 
 <style>
 .quote-button {
-    background-color: var(--md-sys-color-primary);
+    background-color: #1565C0;
     color: white;
     padding: 1rem 2rem;
     border: none;
@@ -230,7 +253,90 @@ $mainImage = !empty($allImages) ? $allImages[0] : ($model->imageUrl ?? '');
 }
 
 .quote-button:hover {
+    background-color: #0D47A1;
+}
+
+/* Success Modal Styles */
+.success-modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.7);
+}
+
+.success-modal-content {
+    background-color: white;
+    margin: 15% auto;
+    padding: 0;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.success-modal-header {
+    padding: 2rem;
+    text-align: center;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.success-modal-body {
+    padding: 1.5rem 2rem;
+}
+
+.success-modal-footer {
+    padding: 1rem 2rem 2rem;
+    text-align: center;
+    display: flex;
+    gap: 1rem;
+}
+
+.success-modal-footer .btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+    transition: background-color 0.3s;
+}
+
+.success-modal-footer .btn-primary {
+    background-color: var(--md-sys-color-primary);
+    color: white;
+}
+
+.success-modal-footer .btn-primary:hover {
     background-color: #5a4290;
+}
+
+.success-modal-footer .btn-secondary {
+    background-color: #e0e0e0;
+    color: var(--md-sys-color-on-surface);
+}
+
+.success-modal-footer .btn-secondary:hover {
+    background-color: #d0d0d0;
 }
 
 /* Modal Styles */
@@ -559,8 +665,8 @@ function addProductToQuotation(productId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Show success message
-            alert('Producto agregado al carrito de cotización exitosamente.');
+            // Show success modal
+            showAddToQuotationSuccess();
         } else {
             alert(data.message || 'Error al agregar producto al carrito.');
         }
@@ -569,6 +675,20 @@ function addProductToQuotation(productId) {
         console.error('Error:', error);
         alert('Error al agregar producto al carrito. Por favor, intente nuevamente.');
     });
+}
+
+function showAddToQuotationSuccess() {
+    const modal = document.getElementById('addToQuotationSuccessModal');
+    if (modal) {
+        modal.style.display = 'block';
+    }
+}
+
+function closeAddToQuotationSuccessModal() {
+    const modal = document.getElementById('addToQuotationSuccessModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
 }
 
 function submitQuote(event, productId) {
@@ -600,10 +720,23 @@ function submitQuote(event, productId) {
 
 // Close modal when clicking outside
 window.onclick = function(event) {
-    const modal = document.getElementById('quoteModal');
-    if (event.target == modal) {
-        modal.style.display = 'none';
+    const quoteModal = document.getElementById('quoteModal');
+    const successModal = document.getElementById('addToQuotationSuccessModal');
+    
+    if (event.target == quoteModal) {
+        quoteModal.style.display = 'none';
+    }
+    
+    if (event.target == successModal) {
+        successModal.style.display = 'none';
     }
 }
+
+// Close success modal with Escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeAddToQuotationSuccessModal();
+    }
+});
 </script>
 

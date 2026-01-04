@@ -9,6 +9,8 @@ use yii\web\Response;
 use app\models\Product;
 use app\models\Category;
 use app\models\Banner;
+use app\models\ParallaxBackground;
+use app\models\SponsorBanner;
 use app\helpers\PriceHelper;
 
 /**
@@ -39,7 +41,7 @@ class SiteController extends Controller
         $featuredProducts = Product::find()
             ->where(['status' => Product::STATUS_ACTIVE])
             ->orderBy(['created_at' => SORT_DESC])
-            ->limit(8)
+            ->limit(20)
             ->all();
         
         $categories = Category::find()
@@ -47,10 +49,19 @@ class SiteController extends Controller
             ->limit(6)
             ->all();
 
+        $parallaxBackgrounds = [
+            'products' => ParallaxBackground::getActiveBySection('products'),
+            'categories' => ParallaxBackground::getActiveBySection('categories'),
+        ];
+        
+        $sponsorBanners = SponsorBanner::getActiveBanners();
+
         return $this->render('index', [
             'banners' => $banners,
             'featuredProducts' => $featuredProducts,
             'categories' => $categories,
+            'parallaxBackgrounds' => $parallaxBackgrounds,
+            'sponsorBanners' => $sponsorBanners,
         ]);
     }
 

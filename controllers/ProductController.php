@@ -6,6 +6,7 @@ use Yii;
 use app\models\Product;
 use app\models\Category;
 use app\models\ProductSearch;
+use app\models\ParallaxBackground;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\web\Response;
@@ -27,11 +28,15 @@ class ProductController extends Controller
         $dataProvider->query->andWhere(['status' => Product::STATUS_ACTIVE]);
         
         $categories = Category::getMainCategories();
+        $parallaxBackgrounds = ParallaxBackground::getActiveBySection('products_page');
+
+        $this->view->params['breadcrumbs'][] = 'Productos';
 
         return $this->render('index', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
             'categories' => $categories,
+            'parallaxBackgrounds' => $parallaxBackgrounds,
         ]);
     }
 
@@ -62,6 +67,13 @@ class ProductController extends Controller
             // Limit to 4 if manually related
             $relatedProducts = array_slice($relatedProducts, 0, 4);
         }
+
+        // Breadcrumbs
+        $this->view->params['breadcrumbs'][] = ['label' => 'Productos', 'url' => ['/products']];
+        if ($model->category) {
+            $this->view->params['breadcrumbs'][] = ['label' => $model->category->name, 'url' => ['/category/view', 'id' => $model->category->id]];
+        }
+        $this->view->params['breadcrumbs'][] = $model->name;
 
         return $this->render('view', [
             'model' => $model,

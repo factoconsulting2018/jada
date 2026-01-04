@@ -37,3 +37,4 @@ class m260103_180000_add_dollar_price_to_configuration extends Migration
     }
 }
 
+

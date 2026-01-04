@@ -38,9 +38,14 @@ class QuotationController extends Controller
             }
         }
 
+        $model = new Quotation();
+
+        $this->view->params['breadcrumbs'][] = 'Mi Cotización';
+
         return $this->render('index', [
             'products' => $products,
             'total' => $total,
+            'model' => $model,
         ]);
     }
 
@@ -193,7 +198,16 @@ class QuotationController extends Controller
     {
         $cart = Yii::$app->session->get('quotation_cart', []);
         
+        $isAjax = Yii::$app->request->isAjax || Yii::$app->request->headers->get('X-Requested-With') === 'XMLHttpRequest';
+        
         if (empty($cart)) {
+            if ($isAjax) {
+                Yii::$app->response->format = Response::FORMAT_JSON;
+                return [
+                    'success' => false,
+                    'message' => 'El carrito está vacío.',
+                ];
+            }
             Yii::$app->session->setFlash('error', 'El carrito está vacío.');
             return $this->redirect(['index']);
         }
@@ -220,29 +234,32 @@ class QuotationController extends Controller
             // Send email to admin
             $this->sendQuotationEmailToAdmin($model);
 
-            // Store quotation data in session for success modal
-            $quotationProducts = $model->quotationProducts;
-            Yii::$app->session->set('quotation_success_data', [
-                'quotation_id' => $model->id,
-                'full_name' => $model->full_name,
-                'email' => $model->email,
-                'whatsapp' => $model->whatsapp,
-                'products' => array_map(function($qp) {
-                    return [
-                        'product_name' => $qp->product->name,
-                        'quantity' => $qp->quantity,
-                        'price' => $qp->price,
-                        'subtotal' => $qp->getSubtotal(),
-                    ];
-                }, $quotationProducts),
-                'total' => $model->getTotal(),
-            ]);
-
             // Clear cart
             Yii::$app->session->remove('quotation_cart');
 
-            // Redirect to index to show modal
-            return $this->redirect(['index']);
+            // If AJAX request, return JSON
+            if ($isAjax) {
+                Yii::$app->response->format = Response::FORMAT_JSON;
+                return [
+                    'success' => true,
+                    'message' => 'Su cotización fue enviada con éxito.',
+                ];
+            }
+
+            // Set success flash message
+            Yii::$app->session->setFlash('success', 'Cotización enviada exitosamente. Nos pondremos en contacto pronto.');
+
+            // Redirect to products page
+            return $this->redirect(['/product/index']);
+        }
+        
+        // If AJAX request and validation failed, return JSON with errors
+        if ($isAjax && Yii::$app->request->isPost) {
+            Yii::$app->response->format = Response::FORMAT_JSON;
+            return [
+                'success' => false,
+                'errors' => $model->errors,
+            ];
         }
 
         // If form not submitted or validation failed, show form

@@ -102,3 +102,4 @@ class QuotationProduct extends ActiveRecord
     }
 }
 
+
