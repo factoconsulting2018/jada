@@ -13,6 +13,7 @@ use yii\helpers\Json;
  *
  * @property integer $id
  * @property string $name
+ * @property string $code
  * @property string $description
  * @property float $price
  * @property integer $category_id
@@ -59,9 +60,11 @@ class Product extends ActiveRecord
             [['name', 'price', 'category_id'], 'required'],
             [['description'], 'string'],
             [['price'], 'number', 'min' => 0],
-            [['category_id', 'status'], 'integer'],
+            [['category_id', 'brand_id', 'status'], 'integer'],
             [['status'], 'default', 'value' => self::STATUS_ACTIVE],
             [['name'], 'string', 'max' => 255],
+            [['code'], 'string', 'max' => 50],
+            [['code'], 'match', 'pattern' => '/^[a-zA-Z0-9]*$/', 'message' => 'El código solo puede contener letras y números.'],
             [['image'], 'string', 'max' => 255],
             [['images'], 'string'],
             [['video_url'], 'string', 'max' => 500],
@@ -83,6 +86,7 @@ class Product extends ActiveRecord
             'description' => 'Descripción',
             'price' => 'Precio',
             'category_id' => 'Categoría',
+            'brand_id' => 'Marca',
             'image' => 'Imagen Principal',
             'images' => 'Imágenes Adicionales',
             'imageFiles' => 'Imágenes',
@@ -119,6 +123,16 @@ class Product extends ActiveRecord
     public function getCategory()
     {
         return $this->hasOne(Category::class, ['id' => 'category_id']);
+    }
+
+    /**
+     * Gets query for [[Brand]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getBrand()
+    {
+        return $this->hasOne(Brand::class, ['id' => 'brand_id']);
     }
 
     /**

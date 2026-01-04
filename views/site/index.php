@@ -9,9 +9,15 @@ use app\models\Product;
 use app\models\Category;
 use app\models\ParallaxBackground;
 use app\models\SponsorBanner;
+use app\models\Configuration;
 use app\helpers\PriceHelper;
 
 $this->title = 'Inicio';
+
+$showSectionBanner = Configuration::getValue('section_banner', '1') == '1';
+$showSectionProducts = Configuration::getValue('section_products', '1') == '1';
+$showSectionCategories = Configuration::getValue('section_categories', '1') == '1';
+$showSectionSponsors = Configuration::getValue('section_sponsors', '1') == '1';
 
 $banners = Banner::getActiveBanners();
 
@@ -29,16 +35,34 @@ $categoryColors = [
 ?>
 
 <div class="site-index">
-    <?php if (!empty($banners)): ?>
+    <?php if ($showSectionBanner && !empty($banners)): ?>
     <div class="hero-banner">
         <?php foreach ($banners as $index => $banner): ?>
         <div class="hero-slide <?= $index === 0 ? 'active' : '' ?>">
-            <?php if ($banner->link): ?>
-                <a href="<?= Html::encode($banner->link) ?>">
-                    <img src="<?= Html::encode($banner->imageUrl) ?>" alt="<?= Html::encode($banner->title) ?>">
-                </a>
+            <?php 
+            $videoEmbedUrl = $banner->getYouTubeEmbedUrl();
+            if ($videoEmbedUrl): 
+            ?>
+                <div class="hero-video-container">
+                    <iframe 
+                        src="<?= Html::encode($videoEmbedUrl) ?>" 
+                        frameborder="0" 
+                        allow="autoplay; encrypted-media" 
+                        allowfullscreen
+                        class="hero-video-background">
+                    </iframe>
+                    <?php if ($banner->image): ?>
+                        <div class="hero-video-fallback" style="background-image: url('<?= Html::encode($banner->imageUrl) ?>');"></div>
+                    <?php endif; ?>
+                </div>
             <?php else: ?>
-                <img src="<?= Html::encode($banner->imageUrl) ?>" alt="<?= Html::encode($banner->title) ?>">
+                <?php if ($banner->link): ?>
+                    <a href="<?= Html::encode($banner->link) ?>">
+                        <img src="<?= Html::encode($banner->imageUrl) ?>" alt="<?= Html::encode($banner->title) ?>">
+                    </a>
+                <?php else: ?>
+                    <img src="<?= Html::encode($banner->imageUrl) ?>" alt="<?= Html::encode($banner->title) ?>">
+                <?php endif; ?>
             <?php endif; ?>
             <div class="hero-content">
                 <h2 class="hero-title"><?= Html::encode($banner->title) ?></h2>
@@ -58,14 +82,50 @@ $categoryColors = [
     </div>
     <?php endif; ?>
 
+    <?php 
+    $blockTitle = Configuration::getValue('block_title', '');
+    $blockContent = Configuration::getValue('block_content', '');
+    if (!empty($blockTitle) || !empty($blockContent)): 
+    ?>
+    <div class="content-block" style="padding: 2rem 2rem; background-color: #f5f5f5; margin: 0;">
+        <div class="container" style="max-width: 1200px; margin: 0 auto;">
+            <?php if (!empty($blockTitle)): ?>
+                <h2 class="block-title" style="font-size: 2rem; font-weight: 600; margin-bottom: 1.5rem; color: var(--md-sys-color-on-surface); text-align: center;">
+                    <?= Html::encode($blockTitle) ?>
+                </h2>
+            <?php endif; ?>
+            <?php if (!empty($blockContent)): ?>
+                <div class="block-content" style="font-size: 1.125rem; line-height: 1.8; color: var(--md-sys-color-on-surface-variant); text-align: center; white-space: pre-wrap;">
+                    <?= nl2br(Html::encode($blockContent)) ?>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <?php if ($showSectionProducts): ?>
     <section class="products-section parallax-section" data-section="products">
         <?php if (!empty($parallaxBackgrounds['products'])): ?>
-            <?php foreach ($parallaxBackgrounds['products'] as $bg): ?>
-                <div class="parallax-background" data-image="<?= Html::encode($bg->imageUrl) ?>" style="background-image: url('<?= Html::encode($bg->imageUrl) ?>');"></div>
-            <?php endforeach; ?>
+            <?php 
+            // Mostrar solo el primer fondo parallax activo (posición 1)
+            $firstBg = reset($parallaxBackgrounds['products']);
+            if ($firstBg): 
+                $overlayColor = $firstBg->overlay_color ?: '#FFFFFF';
+                $overlayOpacity = $firstBg->overlay_opacity ?: 0.3;
+                // Convert hex to rgba
+                $hex = str_replace('#', '', $overlayColor);
+                $r = hexdec(substr($hex, 0, 2));
+                $g = hexdec(substr($hex, 2, 2));
+                $b = hexdec(substr($hex, 4, 2));
+                $rgba = "rgba({$r}, {$g}, {$b}, {$overlayOpacity})";
+            ?>
+                <div class="parallax-background" data-image="<?= Html::encode($firstBg->imageUrl) ?>" style="background-image: url('<?= Html::encode($firstBg->imageUrl) ?>');">
+                    <div class="parallax-overlay" style="background-color: <?= Html::encode($rgba) ?>;"></div>
+                </div>
+            <?php endif; ?>
         <?php endif; ?>
         <div class="container">
-            <h2 style="font-size: 2rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--md-sys-color-on-surface); text-align: center; width: 100%;">
+            <h2 class="products-section-title" style="font-size: 2rem; font-weight: 700; margin-bottom: 1.5rem; background-color: #1976D2; color: white; text-align: center; width: 100%; padding: 1rem; border-radius: 8px;">
                 Nuestros productos
             </h2>
             <div class="products-scroll-wrapper">
@@ -112,13 +172,28 @@ $categoryColors = [
             </div>
         </div>
     </section>
+    <?php endif; ?>
 
-    <?php if (!empty($categories)): ?>
+    <?php if ($showSectionCategories && !empty($categories)): ?>
         <section class="categories-section parallax-section" data-section="categories">
             <?php if (!empty($parallaxBackgrounds['categories'])): ?>
-                <?php foreach ($parallaxBackgrounds['categories'] as $bg): ?>
-                    <div class="parallax-background" data-image="<?= Html::encode($bg->imageUrl) ?>" style="background-image: url('<?= Html::encode($bg->imageUrl) ?>');"></div>
-                <?php endforeach; ?>
+                <?php 
+                // Mostrar solo el primer fondo parallax activo (posición 1)
+                $firstCategoryBg = reset($parallaxBackgrounds['categories']);
+                if ($firstCategoryBg): 
+                    $overlayColorCat = $firstCategoryBg->overlay_color ?: '#FFFFFF';
+                    $overlayOpacityCat = $firstCategoryBg->overlay_opacity ?: 0.3;
+                    // Convert hex to rgba
+                    $hexCat = str_replace('#', '', $overlayColorCat);
+                    $rCat = hexdec(substr($hexCat, 0, 2));
+                    $gCat = hexdec(substr($hexCat, 2, 2));
+                    $bCat = hexdec(substr($hexCat, 4, 2));
+                    $rgbaCat = "rgba({$rCat}, {$gCat}, {$bCat}, {$overlayOpacityCat})";
+                ?>
+                    <div class="parallax-background" data-image="<?= Html::encode($firstCategoryBg->imageUrl) ?>" style="background-image: url('<?= Html::encode($firstCategoryBg->imageUrl) ?>');">
+                        <div class="parallax-overlay" style="background-color: <?= Html::encode($rgbaCat) ?>;"></div>
+                    </div>
+                <?php endif; ?>
             <?php endif; ?>
             <div class="container">
                 <h2 style="font-size: 2rem; font-weight: 400; margin-bottom: 1.5rem; color: var(--md-sys-color-on-surface);">
@@ -156,9 +231,10 @@ $categoryColors = [
         </section>
     <?php endif; ?>
 
-    <?php if (!empty($sponsorBanners)): ?>
+    <?php if ($showSectionSponsors && !empty($sponsorBanners)): ?>
         <section class="sponsors-section">
             <div class="container">
+                <h2 class="sponsors-title">Nuestras marcas</h2>
                 <div class="sponsors-grid">
                     <?php foreach ($sponsorBanners as $sponsor): ?>
                         <?php if ($sponsor->link): ?>
@@ -194,7 +270,17 @@ $categoryColors = [
     background-position: center center;
     background-repeat: no-repeat;
     z-index: -1;
-    opacity: 0.3;
+    pointer-events: none;
+}
+
+.parallax-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
     pointer-events: none;
 }
 
@@ -205,48 +291,6 @@ $categoryColors = [
     width: 100%;
 }
 
-.sponsors-section {
-    padding: 3rem 0;
-    background-color: #f9f9f9;
-}
-
-.sponsors-section .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 2rem;
-}
-
-.sponsors-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 2rem;
-    align-items: center;
-}
-
-.sponsor-item {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: white;
-    padding: 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    text-decoration: none;
-    height: 120px;
-    overflow: hidden;
-}
-
-.sponsor-item:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-}
-
-.sponsor-item img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-}
 
 .products-section .container,
 .categories-section .container {

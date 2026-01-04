@@ -14,6 +14,7 @@ use yii\helpers\FileHelper;
  * @property string $title
  * @property string $subtitle
  * @property string $image
+ * @property string $video_url
  * @property string $link
  * @property integer $order
  * @property integer $status
@@ -46,6 +47,8 @@ class Banner extends ActiveRecord
         return [
             [['title'], 'required'],
             [['subtitle', 'link'], 'string', 'max' => 255],
+            [['video_url'], 'string', 'max' => 500],
+            [['video_url'], 'url', 'skipOnEmpty' => true],
             [['order', 'status'], 'integer'],
             [['status'], 'default', 'value' => self::STATUS_ACTIVE],
             [['order'], 'default', 'value' => 0],
@@ -65,6 +68,7 @@ class Banner extends ActiveRecord
             'subtitle' => 'Subtítulo',
             'image' => 'Imagen',
             'imageFile' => 'Imagen',
+            'video_url' => 'Video de Fondo (YouTube)',
             'link' => 'Enlace',
             'order' => 'Orden',
             'status' => 'Estado',
@@ -121,6 +125,31 @@ class Banner extends ActiveRecord
             return Yii::getAlias('@web') . $this->image;
         }
         return Yii::getAlias('@web') . '/images/no-image.png';
+    }
+
+    /**
+     * Get YouTube embed URL from video URL
+     */
+    public function getYouTubeEmbedUrl()
+    {
+        if (!$this->video_url) {
+            return null;
+        }
+
+        // Extract video ID from various YouTube URL formats
+        $patterns = [
+            '/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/',
+            '/youtu\.be\/([a-zA-Z0-9_-]+)/',
+            '/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $this->video_url, $matches)) {
+                return 'https://www.youtube.com/embed/' . $matches[1] . '?autoplay=1&mute=1&loop=1&playlist=' . $matches[1] . '&controls=0&showinfo=0&rel=0&modestbranding=1';
+            }
+        }
+
+        return null;
     }
 
     /**

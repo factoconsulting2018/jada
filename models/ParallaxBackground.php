@@ -13,6 +13,8 @@ use yii\helpers\FileHelper;
  * @property integer $id
  * @property string $section
  * @property string $image
+ * @property string $overlay_color
+ * @property string $overlay_opacity
  * @property string $title
  * @property integer $status
  * @property integer $position
@@ -47,6 +49,9 @@ class ParallaxBackground extends ActiveRecord
             [['status', 'position'], 'integer'],
             [['section'], 'string', 'max' => 100],
             [['image', 'title'], 'string', 'max' => 255],
+            [['overlay_color'], 'string', 'max' => 7],
+            [['overlay_color'], 'match', 'pattern' => '/^#[0-9A-Fa-f]{6}$/', 'skipOnEmpty' => true],
+            [['overlay_opacity'], 'number', 'min' => 0, 'max' => 1],
             [['status'], 'in', 'range' => [self::STATUS_INACTIVE, self::STATUS_ACTIVE]],
             [['status'], 'default', 'value' => self::STATUS_ACTIVE],
             [['position'], 'default', 'value' => 0],
@@ -64,6 +69,8 @@ class ParallaxBackground extends ActiveRecord
             'section' => 'Sección',
             'image' => 'Imagen de Fondo',
             'imageFile' => 'Imagen de Fondo',
+            'overlay_color' => 'Color del Overlay',
+            'overlay_opacity' => 'Opacidad del Overlay',
             'title' => 'Título',
             'status' => 'Estado',
             'position' => 'Posición',
@@ -82,6 +89,7 @@ class ParallaxBackground extends ActiveRecord
             'products' => 'Productos (Index)',
             'categories' => 'Categorías',
             'products_page' => 'Productos (Página)',
+            'banner' => 'Banner',
         ];
     }
 

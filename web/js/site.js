@@ -69,9 +69,84 @@ document.addEventListener('DOMContentLoaded', function() {
     const heroSearchSuggestions = document.getElementById('hero-search-suggestions');
     let searchTimeout = null;
     let currentSearchRequest = null;
+    let typewriterInterval = null;
+    let isUserTyping = false;
 
     if (heroSearchInput && heroSearchSuggestions) {
+        // Typewriter effect
+        const searchWord = 'Sopladora';
+        let currentCharIndex = 0;
+        let isDeleting = false;
+        let typewriterPaused = false;
+        
+        function typewriterEffect() {
+            if (isUserTyping || typewriterPaused) {
+                return;
+            }
+            
+            if (!isDeleting && currentCharIndex < searchWord.length) {
+                // Escribiendo
+                heroSearchInput.value = searchWord.substring(0, currentCharIndex + 1);
+                currentCharIndex++;
+                typewriterInterval = setTimeout(typewriterEffect, 100);
+            } else if (isDeleting && currentCharIndex > 0) {
+                // Borrando
+                heroSearchInput.value = searchWord.substring(0, currentCharIndex - 1);
+                currentCharIndex--;
+                typewriterInterval = setTimeout(typewriterEffect, 50);
+            } else if (!isDeleting && currentCharIndex === searchWord.length) {
+                // Pausa después de escribir
+                typewriterInterval = setTimeout(function() {
+                    isDeleting = true;
+                    typewriterEffect();
+                }, 2000);
+            } else if (isDeleting && currentCharIndex === 0) {
+                // Pausa después de borrar y reiniciar
+                isDeleting = false;
+                typewriterInterval = setTimeout(typewriterEffect, 500);
+            }
+        }
+        
+        // Detectar cuando el usuario empieza a escribir
+        heroSearchInput.addEventListener('focus', function() {
+            isUserTyping = true;
+            typewriterPaused = true;
+            if (typewriterInterval) {
+                clearTimeout(typewriterInterval);
+                typewriterInterval = null;
+            }
+        });
+        
+        // Detectar cuando el usuario deja de escribir y sale del campo
+        heroSearchInput.addEventListener('blur', function() {
+            if (this.value === '') {
+                isUserTyping = false;
+                typewriterPaused = false;
+                currentCharIndex = 0;
+                isDeleting = false;
+                this.value = '';
+                // Reiniciar el efecto después de un breve delay
+                setTimeout(function() {
+                    if (!heroSearchInput.matches(':focus')) {
+                        typewriterEffect();
+                    }
+                }, 1000);
+            }
+        });
+        
         heroSearchInput.addEventListener('input', function() {
+            if (this.value.length > 0) {
+                isUserTyping = true;
+                typewriterPaused = true;
+                if (typewriterInterval) {
+                    clearTimeout(typewriterInterval);
+                    typewriterInterval = null;
+                }
+            } else {
+                // Si el usuario borra todo, puede reiniciar el efecto
+                isUserTyping = false;
+            }
+            
             const query = this.value.trim();
             
             // Clear previous timeout
@@ -115,19 +190,53 @@ document.addEventListener('DOMContentLoaded', function() {
                 xhr.send();
             }, 300);
         });
+        
+        // Iniciar el efecto typewriter después de un delay inicial
+        setTimeout(function() {
+            if (!heroSearchInput.matches(':focus') && heroSearchInput.value === '') {
+                typewriterEffect();
+            }
+        }, 1000);
 
         function displaySuggestions(results) {
             if (results.length === 0) {
-                heroSearchSuggestions.innerHTML = '<div class="search-suggestion-empty">No se encontraron productos</div>';
+                heroSearchSuggestions.innerHTML = '<div class="search-suggestion-empty">No se encontraron resultados</div>';
                 heroSearchSuggestions.classList.add('active');
                 return;
             }
 
             let html = '';
-            results.forEach(function(product) {
-                html += '<a href="' + product.url + '" class="search-suggestion-item">';
-                html += '<span class="search-suggestion-name">' + escapeHtml(product.name) + '</span>';
-                html += '<span class="search-suggestion-price">' + escapeHtml(product.price) + '</span>';
+            results.forEach(function(result) {
+                let typeLabel = '';
+                let typeIcon = '';
+                
+                if (result.type === 'product') {
+                    typeLabel = 'Producto';
+                    typeIcon = 'inventory_2';
+                } else if (result.type === 'category') {
+                    typeLabel = 'Categoría';
+                    typeIcon = 'category';
+                } else if (result.type === 'brand') {
+                    typeLabel = 'Marca';
+                    typeIcon = 'business';
+                } else {
+                    // Fallback for backward compatibility
+                    typeLabel = 'Producto';
+                    typeIcon = 'inventory_2';
+                }
+                
+                html += '<a href="' + escapeHtml(result.url) + '" class="search-suggestion-item" data-type="' + (result.type || 'product') + '">';
+                html += '<span class="search-suggestion-icon material-icons">' + typeIcon + '</span>';
+                html += '<span class="search-suggestion-content">';
+                html += '<span class="search-suggestion-name">' + escapeHtml(result.name) + '</span>';
+                if (result.code) {
+                    html += '<span class="search-suggestion-code">Código: ' + escapeHtml(result.code) + '</span>';
+                }
+                html += '<span class="search-suggestion-type">' + typeLabel + '</span>';
+                html += '</span>';
+                if (result.price) {
+                    html += '<span class="search-suggestion-price">' + escapeHtml(result.price) + '</span>';
+                }
                 html += '</a>';
             });
             

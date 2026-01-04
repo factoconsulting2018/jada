@@ -18,8 +18,8 @@ class ClientSearch extends Client
     public function rules()
     {
         return [
-            [['id', 'created_at', 'updated_at'], 'integer'],
-            [['name', 'email', 'phone', 'address'], 'safe'],
+            [['id', 'status', 'created_at', 'updated_at'], 'integer'],
+            [['id_type', 'id_number', 'full_name', 'email', 'whatsapp', 'phone', 'address'], 'safe'],
         ];
     }
 
@@ -52,7 +52,7 @@ class ClientSearch extends Client
             ],
             'sort' => [
                 'defaultOrder' => [
-                    'id' => SORT_DESC,
+                    'created_at' => SORT_DESC,
                 ]
             ],
         ]);
@@ -68,16 +68,19 @@ class ClientSearch extends Client
         // grid filtering conditions
         $query->andFilterWhere([
             'id' => $this->id,
+            'status' => $this->status,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ]);
 
-        $query->andFilterWhere(['like', 'name', $this->name])
+        $query->andFilterWhere(['like', 'id_type', $this->id_type])
+            ->andFilterWhere(['like', 'id_number', $this->id_number])
+            ->andFilterWhere(['like', 'full_name', $this->full_name])
             ->andFilterWhere(['like', 'email', $this->email])
+            ->andFilterWhere(['like', 'whatsapp', $this->whatsapp])
             ->andFilterWhere(['like', 'phone', $this->phone])
             ->andFilterWhere(['like', 'address', $this->address]);
 
         return $dataProvider;
     }
 }
-

@@ -24,6 +24,7 @@ class ClientController extends Controller
                 'class' => VerbFilter::class,
                 'actions' => [
                     'delete' => ['POST'],
+                    'change-status' => ['POST'],
                 ],
             ],
         ];
@@ -33,14 +34,28 @@ class ClientController extends Controller
      * Lists all Client models.
      * @return mixed
      */
-    public function actionIndex()
+    public function actionIndex($tab = 'pending')
     {
         $searchModel = new ClientSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $params = Yii::$app->request->queryParams;
+        
+        // Set status based on tab
+        $statusMap = [
+            'pending' => Client::STATUS_PENDING,
+            'accepted' => Client::STATUS_ACCEPTED,
+            'rejected' => Client::STATUS_REJECTED,
+        ];
+        
+        $status = $statusMap[$tab] ?? Client::STATUS_PENDING;
+        $searchModel->status = $status;
+        
+        $dataProvider = $searchModel->search($params);
+        $dataProvider->query->andWhere(['status' => $status]);
 
         return $this->render('index', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
+            'currentTab' => $tab,
         ]);
     }
 
@@ -98,6 +113,35 @@ class ClientController extends Controller
     }
 
     /**
+     * Changes client status
+     * @param integer $id
+     * @param integer $status
+     * @return mixed
+     * @throws NotFoundHttpException if the model cannot be found
+     */
+    public function actionChangeStatus($id, $status)
+    {
+        $model = $this->findModel($id);
+        $model->status = $status;
+        
+        if ($model->save(false)) {
+            Yii::$app->session->setFlash('success', 'Estado del cliente actualizado exitosamente.');
+        } else {
+            Yii::$app->session->setFlash('error', 'Error al actualizar el estado del cliente.');
+        }
+        
+        // Redirect to appropriate tab
+        $tabMap = [
+            Client::STATUS_PENDING => 'pending',
+            Client::STATUS_ACCEPTED => 'accepted',
+            Client::STATUS_REJECTED => 'rejected',
+        ];
+        $tab = $tabMap[$status] ?? 'pending';
+        
+        return $this->redirect(['index', 'tab' => $tab]);
+    }
+
+    /**
      * Deletes an existing Client model.
      * If deletion is successful, the browser will be redirected to the 'index' page.
      * @param integer $id
@@ -106,10 +150,20 @@ class ClientController extends Controller
      */
     public function actionDelete($id)
     {
-        $this->findModel($id)->delete();
+        $model = $this->findModel($id);
+        $currentStatus = $model->status;
+        $model->delete();
         Yii::$app->session->setFlash('success', 'Cliente eliminado exitosamente.');
+        
+        // Redirect to appropriate tab
+        $tabMap = [
+            Client::STATUS_PENDING => 'pending',
+            Client::STATUS_ACCEPTED => 'accepted',
+            Client::STATUS_REJECTED => 'rejected',
+        ];
+        $tab = $tabMap[$currentStatus] ?? 'pending';
 
-        return $this->redirect(['index']);
+        return $this->redirect(['index', 'tab' => $tab]);
     }
 
     /**
@@ -128,4 +182,3 @@ class ClientController extends Controller
         throw new NotFoundHttpException('La página solicitada no existe.');
     }
 }
-

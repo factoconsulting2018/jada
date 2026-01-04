@@ -5,6 +5,7 @@ namespace app\controllers;
 use Yii;
 use app\models\Product;
 use app\models\Category;
+use app\models\Brand;
 use app\models\ProductSearch;
 use app\models\ParallaxBackground;
 use yii\web\Controller;
@@ -25,10 +26,21 @@ class ProductController extends Controller
     public function actionIndex()
     {
         $searchModel = new ProductSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $params = Yii::$app->request->queryParams;
+        
+        // Handle brand filter from URL parameter
+        if (isset($params['brand'])) {
+            $searchModel->brand_id = $params['brand'];
+        }
+        
+        $dataProvider = $searchModel->search($params);
         $dataProvider->query->andWhere(['status' => Product::STATUS_ACTIVE]);
         
         $categories = Category::getMainCategories();
+        $brands = Brand::find()
+            ->where(['status' => Brand::STATUS_ACTIVE])
+            ->orderBy(['name' => SORT_ASC])
+            ->all();
         $parallaxBackgrounds = ParallaxBackground::getActiveBySection('products_page');
 
         $this->view->params['breadcrumbs'][] = 'Productos';
@@ -37,6 +49,7 @@ class ProductController extends Controller
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
             'categories' => $categories,
+            'brands' => $brands,
             'parallaxBackgrounds' => $parallaxBackgrounds,
         ]);
     }

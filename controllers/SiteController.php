@@ -8,6 +8,7 @@ use yii\web\ErrorAction;
 use yii\web\Response;
 use app\models\Product;
 use app\models\Category;
+use app\models\Brand;
 use app\models\Banner;
 use app\models\ParallaxBackground;
 use app\models\SponsorBanner;
@@ -66,7 +67,7 @@ class SiteController extends Controller
     }
 
     /**
-     * Search products for autocomplete
+     * Search products, categories, brands and codes for autocomplete
      * 
      * @return Response
      */
@@ -81,19 +82,59 @@ class SiteController extends Controller
             return [];
         }
         
+        $results = [];
+        
+        // Search products by name and code
         $products = Product::find()
             ->where(['status' => Product::STATUS_ACTIVE])
-            ->andWhere(['like', 'name', $query])
-            ->limit(10)
+            ->andWhere([
+                'or',
+                ['like', 'name', $query],
+                ['like', 'code', $query]
+            ])
+            ->limit(8)
             ->all();
         
-        $results = [];
         foreach ($products as $product) {
             $results[] = [
+                'type' => 'product',
                 'id' => $product->id,
                 'name' => $product->name,
+                'code' => $product->code,
                 'price' => $product->formattedPrice,
                 'url' => \yii\helpers\Url::to(['/product/view', 'id' => $product->id]),
+            ];
+        }
+        
+        // Search categories
+        $categories = Category::find()
+            ->where(['status' => Category::STATUS_ACTIVE])
+            ->andWhere(['like', 'name', $query])
+            ->limit(5)
+            ->all();
+        
+        foreach ($categories as $category) {
+            $results[] = [
+                'type' => 'category',
+                'id' => $category->id,
+                'name' => $category->name,
+                'url' => \yii\helpers\Url::to(['/category/view', 'id' => $category->id]),
+            ];
+        }
+        
+        // Search brands
+        $brands = Brand::find()
+            ->where(['status' => Brand::STATUS_ACTIVE])
+            ->andWhere(['like', 'name', $query])
+            ->limit(5)
+            ->all();
+        
+        foreach ($brands as $brand) {
+            $results[] = [
+                'type' => 'brand',
+                'id' => $brand->id,
+                'name' => $brand->name,
+                'url' => \yii\helpers\Url::to(['/products', 'brand' => $brand->id]),
             ];
         }
         

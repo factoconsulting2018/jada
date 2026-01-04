@@ -46,11 +46,15 @@ use app\models\ProductVideo;
         <div style="padding: 1.5rem; border: 1px solid #e0e0e0; border-radius: 8px; border-top-left-radius: 0;">
             <?= $form->field($model, 'name')->textInput(['maxlength' => true, 'class' => 'form-control']) ?>
 
+            <?= $form->field($model, 'code')->textInput(['maxlength' => 50, 'class' => 'form-control', 'placeholder' => 'Código alfanumérico (opcional)']) ?>
+
             <?= $form->field($model, 'description')->textarea(['rows' => 6, 'class' => 'form-control']) ?>
 
             <?= $form->field($model, 'price')->textInput(['type' => 'number', 'step' => '0.01', 'class' => 'form-control']) ?>
 
             <?= $form->field($model, 'category_id')->dropDownList($categoryList, ['prompt' => 'Seleccione una categoría', 'class' => 'form-control']) ?>
+
+            <?= $form->field($model, 'brand_id')->dropDownList($brandList, ['prompt' => 'Seleccione una marca', 'class' => 'form-control']) ?>
 
             <?= $form->field($model, 'status')->dropDownList([
                 \app\models\Product::STATUS_ACTIVE => 'Activo',

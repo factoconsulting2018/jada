@@ -4,6 +4,7 @@ use yii\helpers\Html;
 use yii\widgets\ActiveForm;
 use app\models\SponsorBanner;
 use app\models\ParallaxBackground;
+use app\models\Configuration;
 
 /** @var yii\web\View $this */
 /** @var string $whatsappNumber */
@@ -12,7 +13,8 @@ use app\models\ParallaxBackground;
 /** @var string $dollarPrice */
 /** @var string $showDollarPrice */
 /** @var app\models\SponsorBanner[] $sponsorBanners */
-/** @var app\models\ParallaxBackground[] $productParallaxBackgrounds */
+/** @var array $parallaxSections */
+/** @var array $parallaxBackgroundsBySection */
 
 $this->title = 'Configuración';
 $this->params['breadcrumbs'][] = $this->title;
@@ -57,6 +59,14 @@ $this->params['breadcrumbs'][] = $this->title;
                 <button type="button" class="config-form-tab" data-tab="parallax" onclick="switchConfigTab('parallax')">
                     <span class="material-icons" style="font-size: 18px; vertical-align: middle; margin-right: 0.5rem;">wallpaper</span>
                     Fondos Parallax
+                </button>
+                <button type="button" class="config-form-tab" data-tab="sections" onclick="switchConfigTab('sections')">
+                    <span class="material-icons" style="font-size: 18px; vertical-align: middle; margin-right: 0.5rem;">view_module</span>
+                    Secciones
+                </button>
+                <button type="button" class="config-form-tab" data-tab="bloquesx" onclick="switchConfigTab('bloquesx')">
+                    <span class="material-icons" style="font-size: 18px; vertical-align: middle; margin-right: 0.5rem;">widgets</span>
+                    BloquesX
                 </button>
             </div>
 
@@ -230,57 +240,226 @@ $this->params['breadcrumbs'][] = $this->title;
             <div class="config-form-tab-content" id="config-form-tab-parallax">
                 <div style="padding: 1.5rem; border: 1px solid #e0e0e0; border-radius: 8px; border-top-left-radius: 0;">
                     <p style="color: var(--md-sys-color-on-surface-variant); margin-bottom: 1.5rem;">
-                        Gestiona los fondos parallax que aparecen en la página de productos.
+                        Gestiona los fondos parallax para las distintas secciones del sitio.
                     </p>
 
-                    <div class="sponsor-tabs-container">
-                        <div class="sponsor-tabs">
-                            <?php for ($i = 1; $i <= 4; $i++): ?>
-                                <button type="button" 
-                                        class="sponsor-tab <?= $i === 1 ? 'active' : '' ?>" 
-                                        data-tab="parallax-<?= $i ?>"
-                                        onclick="switchParallaxTab(<?= $i ?>)">
-                                    Fondo <?= $i ?>
-                                </button>
-                            <?php endfor; ?>
-                        </div>
+                    <div class="form-group" style="margin-bottom: 2rem;">
+                        <label for="parallax_section_select" class="form-label" style="font-weight: 500; margin-bottom: 0.75rem; display: block;">Seleccionar Sección</label>
+                        <select id="parallax_section_select" class="form-control" style="max-width: 300px;" onchange="switchParallaxSection(this.value)">
+                            <?php foreach ($parallaxSections as $sectionKey => $sectionLabel): ?>
+                                <option value="<?= Html::encode($sectionKey) ?>"><?= Html::encode($sectionLabel) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small class="form-text" style="color: var(--md-sys-color-on-surface-variant); margin-top: 0.5rem; display: block;">
+                            Selecciona la sección para la cual deseas configurar los fondos parallax.
+                        </small>
+                    </div>
 
-                        <?php for ($i = 1; $i <= 4; $i++): ?>
-                            <?php $bg = $productParallaxBackgrounds[$i]; ?>
-                            <div class="sponsor-tab-content" id="parallax-tab-<?= $i ?>" style="<?= $i !== 1 ? 'display: none;' : '' ?>">
-                                <div style="padding: 1.5rem; border: 1px solid #e0e0e0; border-radius: 8px; border-top-left-radius: 0;">
-                                    <div class="form-group">
-                                        <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 1rem;">
-                                            <input type="checkbox" 
-                                                   name="product_parallax_status_<?= $i ?>" 
-                                                   value="1"
-                                                   <?= $bg->status == ParallaxBackground::STATUS_ACTIVE ? 'checked' : '' ?>
-                                                   style="margin-right: 0.5rem; width: auto;">
-                                            <span>Activar este fondo</span>
-                                        </label>
-                                    </div>
-
-                                    <div class="form-group" style="margin-top: 1rem;">
-                                        <label for="product_parallax_image_<?= $i ?>" class="form-label">Imagen de Fondo</label>
-                                        <?php if ($bg->image): ?>
-                                            <div style="margin-bottom: 0.5rem;">
-                                                <img src="<?= Html::encode($bg->imageUrl) ?>" 
-                                                     alt="Fondo parallax <?= $i ?>" 
-                                                     style="max-width: 300px; max-height: 200px; object-fit: cover; border: 1px solid #e0e0e0; padding: 0.5rem; background: #f5f5f5; border-radius: 4px;">
-                                            </div>
-                                        <?php endif; ?>
-                                        <input type="file" 
-                                               id="product_parallax_image_<?= $i ?>" 
-                                               name="product_parallax_image_<?= $i ?>" 
-                                               accept="image/png,image/jpeg,image/jpg,image/webp"
-                                               class="form-control">
-                                        <small class="form-text" style="color: var(--md-sys-color-on-surface-variant); margin-top: 0.5rem; display: block;">
-                                            Formatos: PNG, JPG, JPEG, WEBP. Tamaño máximo: 10MB.
-                                        </small>
-                                    </div>
+                    <?php 
+                    $firstSectionKey = null;
+                    foreach ($parallaxSections as $sectionKey => $sectionLabel) {
+                        if ($firstSectionKey === null) {
+                            $firstSectionKey = $sectionKey;
+                        }
+                    }
+                    ?>
+                    <?php foreach ($parallaxSections as $sectionKey => $sectionLabel): ?>
+                        <div class="parallax-section-content" id="parallax-section-<?= Html::encode($sectionKey) ?>" style="<?= $sectionKey !== $firstSectionKey ? 'display: none;' : '' ?>">
+                            <h3 style="font-size: 1.25rem; font-weight: 500; margin-bottom: 1.5rem; color: var(--md-sys-color-on-surface);">
+                                <?= Html::encode($sectionLabel) ?>
+                            </h3>
+                            <div class="sponsor-tabs-container">
+                                <div class="sponsor-tabs">
+                                    <?php for ($i = 1; $i <= 4; $i++): ?>
+                                        <button type="button" 
+                                                class="sponsor-tab <?= $i === 1 ? 'active' : '' ?>" 
+                                                data-tab="parallax-<?= Html::encode($sectionKey) ?>-<?= $i ?>"
+                                                onclick="switchParallaxTab('<?= Html::encode($sectionKey) ?>', <?= $i ?>)">
+                                            Fondo <?= $i ?>
+                                        </button>
+                                    <?php endfor; ?>
                                 </div>
+
+                                <?php for ($i = 1; $i <= 4; $i++): ?>
+                                    <?php $bg = $parallaxBackgroundsBySection[$sectionKey][$i]; ?>
+                                    <div class="sponsor-tab-content" id="parallax-<?= Html::encode($sectionKey) ?>-tab-<?= $i ?>" style="<?= $i !== 1 ? 'display: none;' : '' ?>">
+                                        <div style="padding: 1.5rem; border: 1px solid #e0e0e0; border-radius: 8px; border-top-left-radius: 0;">
+                                            <div class="form-group">
+                                                <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 1rem;">
+                                                    <input type="checkbox" 
+                                                           name="parallax_status_<?= Html::encode($sectionKey) ?>_<?= $i ?>" 
+                                                           value="1"
+                                                           <?= $bg->status == ParallaxBackground::STATUS_ACTIVE ? 'checked' : '' ?>
+                                                           style="margin-right: 0.5rem; width: auto;">
+                                                    <span>Activar este fondo</span>
+                                                </label>
+                                            </div>
+
+                                            <div class="form-group" style="margin-top: 1rem;">
+                                                <label for="parallax_image_<?= Html::encode($sectionKey) ?>_<?= $i ?>" class="form-label">Imagen de Fondo</label>
+                                                <?php if ($bg->image): ?>
+                                                    <div style="margin-bottom: 0.5rem;">
+                                                        <img src="<?= Html::encode($bg->imageUrl) ?>" 
+                                                             alt="Fondo parallax <?= Html::encode($sectionLabel) ?> <?= $i ?>" 
+                                                             style="max-width: 300px; max-height: 200px; object-fit: cover; border: 1px solid #e0e0e0; padding: 0.5rem; background: #f5f5f5; border-radius: 4px;">
+                                                    </div>
+                                                <?php endif; ?>
+                                                <input type="file" 
+                                                       id="parallax_image_<?= Html::encode($sectionKey) ?>_<?= $i ?>" 
+                                                       name="parallax_image_<?= Html::encode($sectionKey) ?>_<?= $i ?>" 
+                                                       accept="image/png,image/jpeg,image/jpg,image/webp"
+                                                       class="form-control">
+                                                <small class="form-text" style="color: var(--md-sys-color-on-surface-variant); margin-top: 0.5rem; display: block;">
+                                                    Formatos: PNG, JPG, JPEG, WEBP. Tamaño máximo: 10MB.
+                                                </small>
+                                            </div>
+
+                                            <div class="form-group" style="margin-top: 1.5rem;">
+                                                <label for="parallax_overlay_color_<?= Html::encode($sectionKey) ?>_<?= $i ?>" class="form-label">Color del Overlay</label>
+                                                <div style="display: flex; gap: 1rem; align-items: center;">
+                                                    <input type="color" 
+                                                           id="parallax_overlay_color_<?= Html::encode($sectionKey) ?>_<?= $i ?>" 
+                                                           name="parallax_overlay_color_<?= Html::encode($sectionKey) ?>_<?= $i ?>" 
+                                                           value="<?= Html::encode($bg->overlay_color ?: '#FFFFFF') ?>"
+                                                           style="width: 80px; height: 40px; border: 1px solid #e0e0e0; border-radius: 4px; cursor: pointer;"
+                                                           onchange="document.getElementById('parallax_overlay_color_text_<?= Html::encode($sectionKey) ?>_<?= $i ?>').value = this.value;">
+                                                    <input type="text" 
+                                                           id="parallax_overlay_color_text_<?= Html::encode($sectionKey) ?>_<?= $i ?>" 
+                                                           value="<?= Html::encode($bg->overlay_color ?: '#FFFFFF') ?>"
+                                                           placeholder="#FFFFFF"
+                                                           maxlength="7"
+                                                           style="flex: 1; padding: 0.5rem; border: 1px solid #e0e0e0; border-radius: 4px;"
+                                                           onchange="if(/^#[0-9A-Fa-f]{6}$/i.test(this.value)) { document.getElementById('parallax_overlay_color_<?= Html::encode($sectionKey) ?>_<?= $i ?>').value = this.value; }">
+                                                </div>
+                                                <small class="form-text" style="color: var(--md-sys-color-on-surface-variant); margin-top: 0.5rem; display: block;">
+                                                    Color que se aplicará como overlay sobre la imagen para regular el contraste. Por defecto: blanco (#FFFFFF).
+                                                </small>
+                                            </div>
+
+                                            <div class="form-group" style="margin-top: 1rem;">
+                                                <label for="parallax_overlay_opacity_<?= Html::encode($sectionKey) ?>_<?= $i ?>" class="form-label">Opacidad del Overlay</label>
+                                                <input type="number" 
+                                                       id="parallax_overlay_opacity_<?= Html::encode($sectionKey) ?>_<?= $i ?>" 
+                                                       name="parallax_overlay_opacity_<?= Html::encode($sectionKey) ?>_<?= $i ?>" 
+                                                       value="<?= Html::encode($bg->overlay_opacity ?: '0.3') ?>"
+                                                       min="0" 
+                                                       max="1" 
+                                                       step="0.01"
+                                                       class="form-control"
+                                                       style="max-width: 200px;">
+                                                <small class="form-text" style="color: var(--md-sys-color-on-surface-variant); margin-top: 0.5rem; display: block;">
+                                                    Opacidad del overlay (0.00 = transparente, 1.00 = completamente opaco). Valor por defecto: 0.3
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endfor; ?>
                             </div>
-                        <?php endfor; ?>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+
+            <!-- Tab 6: Secciones -->
+            <div class="config-form-tab-content" id="config-form-tab-sections">
+                <div style="padding: 1.5rem; border: 1px solid #e0e0e0; border-radius: 8px; border-top-left-radius: 0;">
+                    <p style="color: var(--md-sys-color-on-surface-variant); margin-bottom: 1.5rem;">
+                        Activa o desactiva las distintas secciones que aparecen en la página de inicio.
+                    </p>
+
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="checkbox" 
+                                   id="section_banner" 
+                                   name="section_banner" 
+                                   value="1"
+                                   <?= Configuration::getValue('section_banner', '1') == '1' ? 'checked' : '' ?>
+                                   style="margin-right: 0.5rem; width: auto;">
+                            <span style="font-weight: 500;">Sección Banner (Hero)</span>
+                        </label>
+                        <small class="form-text" style="color: var(--md-sys-color-on-surface-variant); margin-top: 0.5rem; display: block; margin-left: 1.75rem;">
+                            Muestra el banner principal con las imágenes hero en la parte superior de la página.
+                        </small>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="checkbox" 
+                                   id="section_products" 
+                                   name="section_products" 
+                                   value="1"
+                                   <?= Configuration::getValue('section_products', '1') == '1' ? 'checked' : '' ?>
+                                   style="margin-right: 0.5rem; width: auto;">
+                            <span style="font-weight: 500;">Sección Productos</span>
+                        </label>
+                        <small class="form-text" style="color: var(--md-sys-color-on-surface-variant); margin-top: 0.5rem; display: block; margin-left: 1.75rem;">
+                            Muestra la sección "Nuestros productos" con el carrusel de productos destacados.
+                        </small>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="checkbox" 
+                                   id="section_categories" 
+                                   name="section_categories" 
+                                   value="1"
+                                   <?= Configuration::getValue('section_categories', '1') == '1' ? 'checked' : '' ?>
+                                   style="margin-right: 0.5rem; width: auto;">
+                            <span style="font-weight: 500;">Sección Categorías</span>
+                        </label>
+                        <small class="form-text" style="color: var(--md-sys-color-on-surface-variant); margin-top: 0.5rem; display: block; margin-left: 1.75rem;">
+                            Muestra la sección de categorías con las tarjetas de categorías disponibles.
+                        </small>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="checkbox" 
+                                   id="section_sponsors" 
+                                   name="section_sponsors" 
+                                   value="1"
+                                   <?= Configuration::getValue('section_sponsors', '1') == '1' ? 'checked' : '' ?>
+                                   style="margin-right: 0.5rem; width: auto;">
+                            <span style="font-weight: 500;">Sección Marcas</span>
+                        </label>
+                        <small class="form-text" style="color: var(--md-sys-color-on-surface-variant); margin-top: 0.5rem; display: block; margin-left: 1.75rem;">
+                            Muestra la sección "Nuestras marcas" con los banners de patrocinadores.
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 7: BloquesX -->
+            <div class="config-form-tab-content" id="config-form-tab-bloquesx">
+                <div style="padding: 1.5rem; border: 1px solid #e0e0e0; border-radius: 8px; border-top-left-radius: 0;">
+                    <p style="color: var(--md-sys-color-on-surface-variant); margin-bottom: 1.5rem;">
+                        Gestiona el bloque de contenido que aparece entre el banner principal y la sección de productos.
+                    </p>
+
+                    <div class="form-group">
+                        <label for="block_title" class="form-label">Título del Bloque</label>
+                        <input type="text" 
+                               id="block_title" 
+                               name="block_title" 
+                               class="form-control" 
+                               value="<?= Html::encode($blockTitle) ?>" 
+                               placeholder="Título del bloque"
+                               maxlength="255">
+                        <small class="form-text" style="color: var(--md-sys-color-on-surface-variant); margin-top: 0.5rem; display: block;">
+                            Título que aparecerá en el bloque de contenido.
+                        </small>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 1.5rem;">
+                        <label for="block_content" class="form-label">Contenido del Bloque</label>
+                        <textarea id="block_content" 
+                                  name="block_content" 
+                                  class="form-control" 
+                                  rows="6"
+                                  placeholder="Ingrese el contenido del bloque..."><?= Html::encode($blockContent) ?></textarea>
+                        <small class="form-text" style="color: var(--md-sys-color-on-surface-variant); margin-top: 0.5rem; display: block;">
+                            Contenido de texto que aparecerá en el bloque. Puede incluir múltiples líneas.
+                        </small>
                     </div>
                 </div>
             </div>
@@ -461,21 +640,51 @@ function switchSponsorTab(tabNumber) {
     event.target.classList.add('active');
 }
 
-function switchParallaxTab(tabNumber) {
-    // Hide all parallax tab contents
+function switchParallaxSection(sectionKey) {
+    // Hide all section contents
+    document.querySelectorAll('.parallax-section-content').forEach(content => {
+        content.style.display = 'none';
+    });
+    
+    // Show selected section
+    const selectedSection = document.getElementById('parallax-section-' + sectionKey);
+    if (selectedSection) {
+        selectedSection.style.display = 'block';
+        // Reset to first tab in the section
+        const firstTab = selectedSection.querySelector('.sponsor-tab');
+        if (firstTab) {
+            const firstTabNumber = firstTab.getAttribute('data-tab').split('-').pop();
+            switchParallaxTab(sectionKey, parseInt(firstTabNumber));
+        }
+    }
+}
+
+function switchParallaxTab(sectionKey, tabNumber) {
+    // Hide all parallax tab contents for this section
+    const sectionContent = document.getElementById('parallax-section-' + sectionKey);
+    if (!sectionContent) return;
+    
     for (let i = 1; i <= 4; i++) {
-        const content = document.getElementById('parallax-tab-' + i);
+        const content = sectionContent.querySelector('#parallax-' + sectionKey + '-tab-' + i);
         if (content) {
             content.style.display = 'none';
         }
-        const tab = document.querySelector('.sponsor-tab[data-tab="parallax-' + i + '"]');
+        const tab = sectionContent.querySelector('.sponsor-tab[data-tab="parallax-' + sectionKey + '-' + i + '"]');
         if (tab) {
             tab.classList.remove('active');
         }
     }
     
     // Show selected tab content
-    document.getElementById('parallax-tab-' + tabNumber).style.display = 'block';
-    event.target.classList.add('active');
+    const selectedContent = sectionContent.querySelector('#parallax-' + sectionKey + '-tab-' + tabNumber);
+    if (selectedContent) {
+        selectedContent.style.display = 'block';
+    }
+    
+    // Add active class to selected tab
+    const selectedTab = sectionContent.querySelector('.sponsor-tab[data-tab="parallax-' + sectionKey + '-' + tabNumber + '"]');
+    if (selectedTab) {
+        selectedTab.classList.add('active');
+    }
 }
 </script>

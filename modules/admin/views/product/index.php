@@ -68,10 +68,26 @@ $searchQuery = Yii::$app->request->get('ProductSearch')['name'] ?? '';
                     },
                     'contentOptions' => ['style' => 'width: 80px;'],
                 ],
-                'name',
+                [
+                    'attribute' => 'name',
+                    'format' => 'raw',
+                    'value' => function ($model) {
+                        $html = Html::encode($model->name);
+                        if ($model->code) {
+                            $html .= '<br><small style="color: #666;">Código: ' . Html::encode($model->code) . '</small>';
+                        }
+                        return $html;
+                    },
+                ],
                 [
                     'attribute' => 'category_id',
                     'value' => 'category.name',
+                ],
+                [
+                    'attribute' => 'brand_id',
+                    'value' => function ($model) {
+                        return $model->brand ? $model->brand->name : 'Sin marca';
+                    },
                 ],
                 [
                     'attribute' => 'price',
@@ -88,13 +104,18 @@ $searchQuery = Yii::$app->request->get('ProductSearch')['name'] ?? '';
                 [
                     'class' => 'yii\grid\ActionColumn',
                     'header' => 'Acciones',
-                    'template' => '{view} {update} {delete}',
+                    'template' => '{view} {update} {backup} {delete}',
                     'buttons' => [
                         'view' => function ($url, $model) {
                             return Html::a('<span class="material-icons">visibility</span>', $url, ['title' => 'Ver']);
                         },
                         'update' => function ($url, $model) {
                             return Html::a('<span class="material-icons">edit</span>', $url, ['title' => 'Editar']);
+                        },
+                        'backup' => function ($url, $model) {
+                            return Html::a('<span class="material-icons">download</span>', ['backup', 'id' => $model->id], [
+                                'title' => 'Backup',
+                            ]);
                         },
                         'delete' => function ($url, $model) {
                             return Html::a('<span class="material-icons">delete</span>', $url, [

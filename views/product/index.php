@@ -4,6 +4,7 @@
 /** @var app\models\ProductSearch $searchModel */
 /** @var yii\data\ActiveDataProvider $dataProvider */
 /** @var app\models\Category[] $categories */
+/** @var app\models\Brand[] $brands */
 
 use yii\helpers\Html;
 use yii\helpers\Url;
@@ -15,53 +16,89 @@ $this->title = 'Productos';
 <div class="product-index">
     <div class="products-section parallax-section" data-section="products_page">
         <?php if (!empty($parallaxBackgrounds)): ?>
-            <?php foreach ($parallaxBackgrounds as $bg): ?>
-                <div class="parallax-background" data-image="<?= Html::encode($bg->imageUrl) ?>" style="background-image: url('<?= Html::encode($bg->imageUrl) ?>');"></div>
-            <?php endforeach; ?>
+            <?php 
+            // Mostrar solo el primer fondo parallax activo (posición 1)
+            $firstBgProduct = reset($parallaxBackgrounds);
+            if ($firstBgProduct): 
+                $overlayColorProd = $firstBgProduct->overlay_color ?: '#FFFFFF';
+                $overlayOpacityProd = $firstBgProduct->overlay_opacity ?: 0.3;
+                // Convert hex to rgba
+                $hexProd = str_replace('#', '', $overlayColorProd);
+                $rProd = hexdec(substr($hexProd, 0, 2));
+                $gProd = hexdec(substr($hexProd, 2, 2));
+                $bProd = hexdec(substr($hexProd, 4, 2));
+                $rgbaProd = "rgba({$rProd}, {$gProd}, {$bProd}, {$overlayOpacityProd})";
+            ?>
+                <div class="parallax-background" data-image="<?= Html::encode($firstBgProduct->imageUrl) ?>" style="background-image: url('<?= Html::encode($firstBgProduct->imageUrl) ?>');">
+                    <div class="parallax-overlay" style="background-color: <?= Html::encode($rgbaProd) ?>;"></div>
+                </div>
+            <?php endif; ?>
         <?php endif; ?>
         <h1 class="section-title" style="font-size: 2rem; font-weight: 500; margin-bottom: 2rem; text-align: center;">Catálogo de Productos</h1>
 
         <div style="display: grid; grid-template-columns: 250px 1fr; gap: 2rem; margin-bottom: 2rem;">
-            <?php if (!empty($categories)): ?>
-            <aside style="background: white; padding: 1.5rem; border-radius: 12px; height: fit-content; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                <h3 style="margin-top: 0; margin-bottom: 1rem;">Categorías</h3>
-                <div class="category-accordion">
-                    <div class="category-accordion-item">
-                        <a href="<?= Url::to(['/products']) ?>" class="category-accordion-link" style="text-decoration: none; color: var(--md-sys-color-on-surface); font-weight: 500;">
-                            Todas
-                        </a>
-                    </div>
-                    <?php foreach ($categories as $cat): ?>
-                    <?php 
-                    $subcategories = \app\models\Category::getSubcategories($cat->id);
-                    $hasSubcategories = !empty($subcategories);
-                    ?>
-                    <div class="category-accordion-item">
-                        <button class="category-accordion-button <?= $hasSubcategories ? 'has-subcategories' : '' ?>" data-category-id="<?= $cat->id ?>">
-                            <a href="<?= Url::to(['/category/view', 'id' => $cat->id]) ?>" 
-                               style="text-decoration: none; color: var(--md-sys-color-on-surface); flex: 1; text-align: left;">
-                                <?= Html::encode($cat->name) ?>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <?php if (!empty($categories)): ?>
+                <aside style="background: white; padding: 1.5rem; border-radius: 12px; height: fit-content; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <h3 style="margin-top: 0; margin-bottom: 1rem;">Categorías</h3>
+                    <div class="category-accordion">
+                        <div class="category-accordion-item">
+                            <a href="<?= Url::to(['/products']) ?>" class="category-accordion-link" style="text-decoration: none; color: var(--md-sys-color-on-surface); font-weight: 500;">
+                                Todas
                             </a>
-                            <?php if ($hasSubcategories): ?>
-                                <span class="accordion-arrow material-icons">keyboard_arrow_down</span>
-                            <?php endif; ?>
-                        </button>
-                        <?php if ($hasSubcategories): ?>
-                        <div class="category-accordion-content" style="display: none;">
-                            <?php foreach ($subcategories as $subcat): ?>
-                            <a href="<?= Url::to(['/category/view', 'id' => $subcat->id]) ?>" 
-                               class="category-subcategory-link"
-                               style="text-decoration: none; color: var(--md-sys-color-on-surface-variant); display: block; padding: 0.5rem 1rem 0.5rem 2rem;">
-                                <?= Html::encode($subcat->name) ?>
-                            </a>
-                            <?php endforeach; ?>
                         </div>
-                        <?php endif; ?>
+                        <?php foreach ($categories as $cat): ?>
+                        <?php 
+                        $subcategories = \app\models\Category::getSubcategories($cat->id);
+                        $hasSubcategories = !empty($subcategories);
+                        ?>
+                        <div class="category-accordion-item">
+                            <button class="category-accordion-button <?= $hasSubcategories ? 'has-subcategories' : '' ?>" data-category-id="<?= $cat->id ?>">
+                                <a href="<?= Url::to(['/category/view', 'id' => $cat->id]) ?>" 
+                                   style="text-decoration: none; color: var(--md-sys-color-on-surface); flex: 1; text-align: left;">
+                                    <?= Html::encode($cat->name) ?>
+                                </a>
+                                <?php if ($hasSubcategories): ?>
+                                    <span class="accordion-arrow material-icons">keyboard_arrow_down</span>
+                                <?php endif; ?>
+                            </button>
+                            <?php if ($hasSubcategories): ?>
+                            <div class="category-accordion-content" style="display: none;">
+                                <?php foreach ($subcategories as $subcat): ?>
+                                <a href="<?= Url::to(['/category/view', 'id' => $subcat->id]) ?>" 
+                                   class="category-subcategory-link"
+                                   style="text-decoration: none; color: var(--md-sys-color-on-surface-variant); display: block; padding: 0.5rem 1rem 0.5rem 2rem;">
+                                    <?= Html::encode($subcat->name) ?>
+                                </a>
+                                <?php endforeach; ?>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                        <?php endforeach; ?>
                     </div>
-                    <?php endforeach; ?>
-                </div>
-            </aside>
-            <?php endif; ?>
+                </aside>
+                <?php endif; ?>
+                
+                <?php if (!empty($brands)): ?>
+                <aside style="background: white; padding: 1.5rem; border-radius: 12px; height: fit-content; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <h3 style="margin-top: 0; margin-bottom: 1rem;">Marcas</h3>
+                    <div class="brand-filter-list">
+                        <div class="brand-filter-item">
+                            <a href="<?= Url::to(['/products']) ?>" class="brand-filter-link" style="font-weight: 500;">
+                                Todas
+                            </a>
+                        </div>
+                        <?php foreach ($brands as $brand): ?>
+                        <div class="brand-filter-item">
+                            <a href="<?= Url::to(['/products', 'brand' => $brand->id]) ?>" class="brand-filter-link">
+                                <?= Html::encode($brand->name) ?>
+                            </a>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </aside>
+                <?php endif; ?>
+            </div>
 
             <div>
                 <?php

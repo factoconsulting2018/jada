@@ -25,6 +25,9 @@ use yii\widgets\ActiveForm;
     </div>
 <?php endif; ?>
 
+<?= $form->field($model, 'video_url')->textInput(['maxlength' => true, 'class' => 'form-control', 'placeholder' => 'https://www.youtube.com/watch?v=... o https://youtu.be/...']) ?>
+<p class="help-block">URL opcional de video de YouTube para usar como fondo del banner. Si se proporciona, el video tendrá prioridad sobre la imagen.</p>
+
 <?= $form->field($model, 'link')->textInput(['maxlength' => true, 'class' => 'form-control']) ?>
 <p class="help-block">URL opcional a donde redirigir al hacer clic en el banner.</p>
 

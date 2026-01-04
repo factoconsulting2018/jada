@@ -31,6 +31,7 @@ $this->params['breadcrumbs'][] = $this->title;
             'attributes' => [
                 'id',
                 'name',
+                'code',
                 'description:ntext',
                 [
                     'attribute' => 'price',
@@ -38,7 +39,11 @@ $this->params['breadcrumbs'][] = $this->title;
                 ],
                 [
                     'attribute' => 'category_id',
-                    'value' => $model->category->name,
+                    'value' => $model->category ? $model->category->name : 'Sin categoría',
+                ],
+                [
+                    'attribute' => 'brand_id',
+                    'value' => $model->brand ? $model->brand->name : 'Sin marca',
                 ],
                 [
                     'attribute' => 'image',

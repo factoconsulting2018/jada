@@ -91,14 +91,27 @@ $mainImage = !empty($allImages) ? $allImages[0] : ($model->imageUrl ?? '');
                 <div>
                     <span style="font-size: 0.875rem; color: var(--md-sys-color-on-surface-variant); display: block; margin-bottom: 0.25rem;">Precio</span>
                     <div class="product-price-detail" style="margin: 0; font-size: 1.75rem; font-weight: 500;"><?= Html::encode($model->formattedPrice) ?></div>
+                    <?php if ($model->brand): ?>
+                        <span style="font-size: 0.875rem; color: var(--md-sys-color-on-surface-variant); display: block; margin-top: 0.5rem;">
+                            Marca: <a href="<?= Url::to(['/products', 'brand' => $model->brand->id]) ?>" style="color: var(--md-sys-color-primary); text-decoration: none;">
+                                <?= Html::encode($model->brand->name) ?>
+                            </a>
+                        </span>
+                    <?php endif; ?>
+                    <?php if ($model->code): ?>
+                        <span style="font-size: 0.875rem; color: var(--md-sys-color-on-surface-variant); display: block; margin-top: 0.5rem;">
+                            Código: <?= Html::encode($model->code) ?>
+                        </span>
+                    <?php endif; ?>
                 </div>
                 <?php 
                 $dollarPrice = PriceHelper::formatDollars($model->price);
                 if ($dollarPrice): 
                 ?>
                     <div style="text-align: right;">
-                        <div style="margin-bottom: 0.25rem;">
-                            <?= Html::a('<span class="material-icons" style="font-size: 22px; vertical-align: middle; color: var(--md-sys-color-on-surface-variant);">print</span>', ['pdf', 'id' => $model->id], ['target' => '_blank', 'title' => 'Generar PDF', 'style' => 'text-decoration: none; display: inline-block; margin-bottom: 0.25rem;']) ?>
+                        <div style="margin-bottom: 0.25rem; display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center;">
+                            <?= Html::a('<span class="material-icons" style="font-size: 22px; vertical-align: middle; color: var(--md-sys-color-on-surface-variant);">print</span>', ['pdf', 'id' => $model->id], ['target' => '_blank', 'title' => 'Generar PDF', 'style' => 'text-decoration: none; display: inline-block;']) ?>
+                            <span class="material-icons" style="font-size: 22px; vertical-align: middle; color: var(--md-sys-color-on-surface-variant); cursor: pointer;" onclick="shareProduct(<?= $model->id ?>, '<?= Html::encode(addslashes($model->name)) ?>', '<?= Html::encode(addslashes($productUrl)) ?>')" title="Compartir producto">share</span>
                         </div>
                         <span style="font-size: 0.75rem; color: var(--md-sys-color-on-surface-variant); display: block; margin-bottom: 0.25rem;">Precio aprox en dólares</span>
                         <div style="font-size: 1.25rem; color: var(--md-sys-color-on-surface-variant);"><?= Html::encode($dollarPrice) ?></div>
@@ -869,6 +882,113 @@ function switchProductTab(tabName) {
     const selectedTab = document.querySelector('.product-tab[data-tab="' + tabName + '"]');
     if (selectedTab) {
         selectedTab.classList.add('active');
+    }
+}
+
+function shareProduct(productId, productName, productUrl) {
+    // Prepare product information text
+    const productInfo = `Producto: ${productName}\n${productUrl}`;
+    
+    // Check if Web Share API is available (mobile devices)
+    if (navigator.share) {
+        navigator.share({
+            title: productName,
+            text: productInfo,
+            url: productUrl
+        }).catch(err => {
+            console.log('Error sharing:', err);
+            fallbackShare(productInfo, productUrl, productName);
+        });
+    } else {
+        // Fallback for desktop browsers
+        fallbackShare(productInfo, productUrl, productName);
+    }
+}
+
+function fallbackShare(productInfo, productUrl, productName) {
+    // Create a modal with sharing options
+    const modal = document.createElement('div');
+    modal.id = 'shareModal';
+    modal.style.cssText = 'display: flex; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center;';
+    
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = 'background-color: white; padding: 2rem; border-radius: 12px; max-width: 500px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3);';
+    
+    modalContent.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2 style="margin: 0; font-size: 1.5rem;">Compartir Producto</h2>
+            <span class="material-icons" onclick="closeShareModal()" style="cursor: pointer; font-size: 24px; color: #666;">close</span>
+        </div>
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Enlace del producto:</label>
+            <div style="display: flex; gap: 0.5rem;">
+                <input type="text" id="shareUrl" value="${productUrl}" readonly style="flex: 1; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.875rem;">
+                <button onclick="copyToClipboard('shareUrl')" style="padding: 0.75rem 1.5rem; background: var(--md-sys-color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">
+                    <span class="material-icons" style="font-size: 18px; vertical-align: middle;">content_copy</span>
+                </button>
+            </div>
+        </div>
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Información del producto:</label>
+            <textarea id="shareText" readonly style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.875rem; min-height: 100px; resize: vertical;">${productInfo}</textarea>
+        </div>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <a href="https://wa.me/?text=${encodeURIComponent(productInfo + ' ' + productUrl)}" target="_blank" style="flex: 1; min-width: 120px; padding: 0.75rem; background: #25D366; color: white; text-align: center; border-radius: 4px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                <span class="material-icons" style="font-size: 20px;">chat</span>
+                WhatsApp
+            </a>
+            <a href="mailto:?subject=${encodeURIComponent('Producto: ' + productName)}&body=${encodeURIComponent(productInfo + '\\n\\n' + productUrl)}" style="flex: 1; min-width: 120px; padding: 0.75rem; background: #2196F3; color: white; text-align: center; border-radius: 4px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                <span class="material-icons" style="font-size: 20px;">email</span>
+                Email
+            </a>
+            <button onclick="copyToClipboard('shareText')" style="flex: 1; min-width: 120px; padding: 0.75rem; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                <span class="material-icons" style="font-size: 20px;">content_copy</span>
+                Copiar
+            </button>
+        </div>
+        <div style="margin-top: 1.5rem; text-align: center;">
+            <button onclick="closeShareModal()" style="padding: 0.75rem 2rem; background: #e0e0e0; color: #333; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">
+                Cerrar
+            </button>
+        </div>
+    `;
+    
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeShareModal();
+        }
+    });
+}
+
+function copyToClipboard(elementId) {
+    const element = document.getElementById(elementId);
+    element.select();
+    element.setSelectionRange(0, 99999); // For mobile devices
+    
+    try {
+        document.execCommand('copy');
+        // Show feedback
+        const button = event.target.closest('button') || event.target;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<span class="material-icons" style="font-size: 18px; vertical-align: middle;">check</span> Copiado!';
+        button.style.background = '#4caf50';
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.style.background = '';
+        }, 2000);
+    } catch (err) {
+        alert('No se pudo copiar al portapapeles');
+    }
+}
+
+function closeShareModal() {
+    const modal = document.getElementById('shareModal');
+    if (modal) {
+        modal.remove();
     }
 }
 </script>
