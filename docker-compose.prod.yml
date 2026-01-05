@@ -11,8 +11,12 @@ services:
     volumes:
       - ./:/var/www/html
       - ./docker/php/php-prod.ini:/usr/local/etc/php/conf.d/custom.ini
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - tienda_network
     expose:
@@ -49,6 +53,12 @@ services:
     networks:
       - tienda_network
     command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
     security_opt:
       - no-new-privileges:true
 
