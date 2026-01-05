@@ -117,6 +117,12 @@ nslookup multiserviciosdeoccidente.com
 
 ## Paso 6: Construir y Desplegar la Aplicación
 
+**IMPORTANTE**: Antes de construir, asegúrate de que el archivo `.env` existe y contiene todas las variables necesarias:
+- `MYSQL_DATABASE`
+- `MYSQL_USER`
+- `MYSQL_PASSWORD`
+- `MYSQL_ROOT_PASSWORD`
+
 ```bash
 # Construir las imágenes Docker
 docker compose -f docker-compose.prod.yml build
@@ -124,8 +130,15 @@ docker compose -f docker-compose.prod.yml build
 # Iniciar los servicios
 docker compose -f docker-compose.prod.yml up -d
 
+# Esperar unos segundos para que MySQL esté listo
+sleep 10
+
 # Verificar que los contenedores estén corriendo
 docker compose -f docker-compose.prod.yml ps
+
+# Si algún contenedor está en estado "Restarting", verificar logs
+docker compose -f docker-compose.prod.yml logs web
+docker compose -f docker-compose.prod.yml logs db
 ```
 
 ## Paso 7: Instalar Dependencias y Ejecutar Migraciones
@@ -254,6 +267,55 @@ sudo crontab -e
 # Agregar: 0 2 * * * /opt/backup-db.sh
 ```
 
+## Actualizar Cambios en el Servidor (Despliegue de Nuevos Cambios)
+
+Si ya tienes la aplicación desplegada y necesitas actualizar con los últimos cambios del repositorio:
+
+```bash
+# 1. Conectarse al servidor vía SSH
+# (Ya deberías estar conectado)
+
+# 2. Navegar al directorio del proyecto
+cd /opt/tienda-online  # o donde esté el proyecto
+
+# 3. Hacer backup de la base de datos (RECOMENDADO)
+docker compose -f docker-compose.prod.yml exec -T db mysqldump -u root -p${MYSQL_ROOT_PASSWORD} tienda_online > backup_$(date +%Y%m%d_%H%M%S).sql
+
+# 4. Obtener los últimos cambios del repositorio
+git pull origin main  # o la rama que uses (master, main, etc.)
+
+# 5. Detener los servicios
+docker compose -f docker-compose.prod.yml down
+
+# 6. Reconstruir las imágenes (solo si hay cambios en Dockerfile o docker-compose)
+docker compose -f docker-compose.prod.yml build
+
+# 7. Iniciar los servicios
+docker compose -f docker-compose.prod.yml up -d
+
+# 8. Esperar a que MySQL esté listo
+sleep 10
+
+# 9. Verificar que los contenedores estén corriendo correctamente
+docker compose -f docker-compose.prod.yml ps
+
+# 10. Si hay nuevas migraciones, ejecutarlas
+docker compose -f docker-compose.prod.yml exec web php yii migrate --interactive=0
+
+# 11. Si hay nuevos cambios en dependencias, actualizar Composer
+docker compose -f docker-compose.prod.yml exec web composer install --no-dev --optimize-autoloader
+
+# 12. Verificar logs para asegurar que todo funciona
+docker compose -f docker-compose.prod.yml logs --tail=50 web
+docker compose -f docker-compose.prod.yml logs --tail=50 nginx
+```
+
+**Nota**: Si solo hay cambios en código PHP/JavaScript (sin cambios en Dockerfiles o docker-compose), puedes omitir los pasos 5 y 6, y simplemente hacer `git pull` seguido de un reinicio de servicios:
+```bash
+git pull
+docker compose -f docker-compose.prod.yml restart web nginx
+```
+
 ## Comandos de Mantenimiento
 
 ```bash
@@ -263,11 +325,25 @@ docker compose -f docker-compose.prod.yml logs -f [servicio]
 # Reiniciar servicios
 docker compose -f docker-compose.prod.yml restart
 
+# Reiniciar un servicio específico
+docker compose -f docker-compose.prod.yml restart web
+docker compose -f docker-compose.prod.yml restart nginx
+docker compose -f docker-compose.prod.yml restart db
+
 # Detener servicios
 docker compose -f docker-compose.prod.yml down
 
+# Detener y eliminar volúmenes (¡CUIDADO! Esto elimina la base de datos)
+docker compose -f docker-compose.prod.yml down -v
+
 # Backup manual de base de datos
-docker compose -f docker-compose.prod.yml exec db mysqldump -u root -p tienda_online > backup_$(date +%Y%m%d).sql
+docker compose -f docker-compose.prod.yml exec db mysqldump -u root -p${MYSQL_ROOT_PASSWORD} tienda_online > backup_$(date +%Y%m%d).sql
+
+# Ver uso de recursos de los contenedores
+docker stats
+
+# Limpiar imágenes y contenedores no usados
+docker system prune -a
 ```
 
 ## Solución de Problemas
@@ -291,6 +367,39 @@ docker compose -f docker-compose.prod.yml restart [servicio]
 
 ### Verificar conexión a la base de datos:
 ```bash
+# Usando variable de entorno (recomendado)
+docker compose -f docker-compose.prod.yml exec db mysql -u root -p${MYSQL_ROOT_PASSWORD} -e "SHOW DATABASES;"
+
+# O de forma interactiva
 docker compose -f docker-compose.prod.yml exec db mysql -u root -p -e "SHOW DATABASES;"
+```
+
+### El contenedor web está en estado "Restarting":
+```bash
+# Ver logs del contenedor web
+docker compose -f docker-compose.prod.yml logs web
+
+# Verificar que el archivo .env existe y tiene MYSQL_ROOT_PASSWORD
+cat .env | grep MYSQL_ROOT_PASSWORD
+
+# Verificar que el servicio db está corriendo
+docker compose -f docker-compose.prod.yml ps db
+
+# Ver logs de la base de datos
+docker compose -f docker-compose.prod.yml logs db
+
+# Si el problema persiste, verificar que mysql-client esté instalado en el contenedor
+docker compose -f docker-compose.prod.yml exec web mysqladmin --version
+```
+
+### Problemas con variables de entorno:
+```bash
+# Verificar que el archivo .env existe
+ls -la .env
+
+# Verificar variables de entorno del contenedor web
+docker compose -f docker-compose.prod.yml exec web env | grep MYSQL
+
+# Si falta el archivo .env, crearlo (ver Paso 3.1)
 ```
 
