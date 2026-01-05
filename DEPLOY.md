@@ -117,15 +117,37 @@ nslookup multiserviciosdeoccidente.com
 
 ## Paso 6: Construir y Desplegar la Aplicación
 
-**IMPORTANTE**: Antes de construir, asegúrate de que el archivo `.env` existe y contiene todas las variables necesarias:
-- `MYSQL_DATABASE`
-- `MYSQL_USER`
-- `MYSQL_PASSWORD`
-- `MYSQL_ROOT_PASSWORD`
+**IMPORTANTE**: Antes de construir, asegúrate de que:
+
+1. **El archivo `.env` existe** y contiene todas las variables necesarias:
+   - `MYSQL_DATABASE`
+   - `MYSQL_USER`
+   - `MYSQL_PASSWORD`
+   - `MYSQL_ROOT_PASSWORD`
+
+2. **El archivo `docker-entrypoint-prod.sh` existe** en el directorio del proyecto:
+```bash
+# Verificar que el archivo existe
+ls -la docker-entrypoint-prod.sh
+
+# Si no existe, verificar que esté en el repositorio
+git ls-files | grep docker-entrypoint-prod.sh
+```
+
+3. **Verificar que todos los archivos necesarios están presentes**:
+```bash
+# Verificar archivos críticos
+ls -la Dockerfile.prod docker-compose.prod.yml docker-entrypoint-prod.sh .env
+```
 
 ```bash
 # Construir las imágenes Docker
 docker compose -f docker-compose.prod.yml build
+
+# Si hay errores durante el build, verificar:
+# - Que docker-entrypoint-prod.sh existe
+# - Que el archivo .env tiene todas las variables
+# - Que no hay errores de sintaxis en Dockerfile.prod
 
 # Iniciar los servicios
 docker compose -f docker-compose.prod.yml up -d
@@ -139,6 +161,9 @@ docker compose -f docker-compose.prod.yml ps
 # Si algún contenedor está en estado "Restarting", verificar logs
 docker compose -f docker-compose.prod.yml logs web
 docker compose -f docker-compose.prod.yml logs db
+
+# Si el contenedor web está reiniciando, verificar específicamente:
+docker compose -f docker-compose.prod.yml logs web | tail -20
 ```
 
 ## Paso 7: Instalar Dependencias y Ejecutar Migraciones
@@ -278,34 +303,68 @@ Si ya tienes la aplicación desplegada y necesitas actualizar con los últimos c
 # 2. Navegar al directorio del proyecto
 cd /opt/tienda-online  # o donde esté el proyecto
 
-# 3. Hacer backup de la base de datos (RECOMENDADO)
-docker compose -f docker-compose.prod.yml exec -T db mysqldump -u root -p${MYSQL_ROOT_PASSWORD} tienda_online > backup_$(date +%Y%m%d_%H%M%S).sql
-
-# 4. Obtener los últimos cambios del repositorio
-git pull origin main  # o la rama que uses (master, main, etc.)
-
-# 5. Detener los servicios
-docker compose -f docker-compose.prod.yml down
-
-# 6. Reconstruir las imágenes (solo si hay cambios en Dockerfile o docker-compose)
-docker compose -f docker-compose.prod.yml build
-
-# 7. Iniciar los servicios
-docker compose -f docker-compose.prod.yml up -d
-
-# 8. Esperar a que MySQL esté listo
-sleep 10
-
-# 9. Verificar que los contenedores estén corriendo correctamente
+# 3. Verificar estado actual de los contenedores
 docker compose -f docker-compose.prod.yml ps
 
-# 10. Si hay nuevas migraciones, ejecutarlas
+# 4. Hacer backup de la base de datos (RECOMENDADO)
+# Solo si el contenedor db está corriendo
+if docker compose -f docker-compose.prod.yml ps db | grep -q "Up"; then
+    docker compose -f docker-compose.prod.yml exec -T db mysqldump -u root -p${MYSQL_ROOT_PASSWORD} tienda_online > backup_$(date +%Y%m%d_%H%M%S).sql
+    echo "Backup creado exitosamente"
+else
+    echo "ADVERTENCIA: El contenedor db no está corriendo. No se pudo hacer backup."
+fi
+
+# 5. Verificar qué rama usar en git
+git branch -r
+# Si la rama es 'master' en lugar de 'main', usar: git pull origin master
+
+# 6. Obtener los últimos cambios del repositorio
+git pull origin main  # o 'master' según tu rama principal
+
+# 7. Verificar que docker-entrypoint-prod.sh existe después del pull
+if [ ! -f "docker-entrypoint-prod.sh" ]; then
+    echo "ERROR: docker-entrypoint-prod.sh no existe. Verificar que esté en el repositorio."
+    exit 1
+fi
+
+# 8. Verificar que el archivo .env existe
+if [ ! -f ".env" ]; then
+    echo "ERROR: El archivo .env no existe. Crearlo antes de continuar (ver Paso 3.1)."
+    exit 1
+fi
+
+# 9. Detener los servicios
+docker compose -f docker-compose.prod.yml down
+
+# 10. Reconstruir las imágenes (necesario si hay cambios en Dockerfile o docker-compose)
+docker compose -f docker-compose.prod.yml build
+
+# 11. Iniciar los servicios
+docker compose -f docker-compose.prod.yml up -d
+
+# 12. Esperar a que MySQL esté listo
+sleep 10
+
+# 13. Verificar que los contenedores estén corriendo correctamente
+docker compose -f docker-compose.prod.yml ps
+
+# 14. Si algún contenedor está en "Restarting", diagnosticar:
+if docker compose -f docker-compose.prod.yml ps | grep -q "Restarting"; then
+    echo "ADVERTENCIA: Algunos contenedores están reiniciando. Verificando logs..."
+    docker compose -f docker-compose.prod.yml logs web | tail -30
+    docker compose -f docker-compose.prod.yml logs db | tail -30
+    echo "Revisa los logs arriba para identificar el problema."
+    exit 1
+fi
+
+# 15. Si hay nuevas migraciones, ejecutarlas
 docker compose -f docker-compose.prod.yml exec web php yii migrate --interactive=0
 
-# 11. Si hay nuevos cambios en dependencias, actualizar Composer
+# 16. Si hay nuevos cambios en dependencias, actualizar Composer
 docker compose -f docker-compose.prod.yml exec web composer install --no-dev --optimize-autoloader
 
-# 12. Verificar logs para asegurar que todo funciona
+# 17. Verificar logs para asegurar que todo funciona
 docker compose -f docker-compose.prod.yml logs --tail=50 web
 docker compose -f docker-compose.prod.yml logs --tail=50 nginx
 ```

@@ -51,6 +51,6 @@ RUN echo "memory_limit = 256M" > /usr/local/etc/php/conf.d/custom.ini \
 
 EXPOSE 9000
 
-ENTRYPOINT ["docker-entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["php-fpm"]
 
