@@ -11,6 +11,9 @@ services:
       - ./docker/php/php-prod.ini:/usr/local/etc/php/conf.d/custom.ini
     environment:
       - MYSQL_HOST=db
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-tienda_online}
+      - MYSQL_USER=${MYSQL_USER:-tienda_user}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
     depends_on:
       db:
