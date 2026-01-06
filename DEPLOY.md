@@ -58,7 +58,7 @@ sudo apt install -y git
 cd /opt  # o /var/www según preferencia
 
 # Clonar el repositorio
-sudo git clone https://github.com/factoconsulting2018/jada.git tienda-online
+sudo git clone git tienda-online
 sudo chown -R $USER:$USER tienda-online
 cd tienda-online
 ```
@@ -86,7 +86,38 @@ nano .env
 cp config/db-docker.php config/db.php
 ```
 
-## Paso 4: Configurar Firewall (UFW)
+## Paso 4: Configurar Firewall
+
+### 4.1 Configurar Security Group en AWS EC2 (CRÍTICO - HACER PRIMERO)
+
+**IMPORTANTE**: El Security Group de AWS debe permitir tráfico entrante en los puertos 80 y 443 desde internet (0.0.0.0/0). **Este es el problema más común que causa el error "Timeout during connect" en Certbot.**
+
+**Pasos en AWS Console:**
+
+1. Ve a **EC2 Dashboard** → **Instances** → Selecciona tu instancia
+2. En la pestaña **Security**, haz clic en el **Security Group** (ej: `sg-xxxxx`)
+3. Haz clic en **Edit inbound rules**
+4. Agrega estas reglas si no existen:
+   - **Type**: HTTP, **Port**: 80, **Source**: 0.0.0.0/0, **Description**: "Allow HTTP for Let's Encrypt"
+   - **Type**: HTTPS, **Port**: 443, **Source**: 0.0.0.0/0, **Description**: "Allow HTTPS"
+   - **Type**: SSH, **Port**: 22, **Source**: Tu IP (o 0.0.0.0/0 solo si es necesario), **Description**: "SSH access"
+5. Haz clic en **Save rules**
+
+**Verificar desde el servidor:**
+```bash
+# Verificar que el puerto 80 está escuchando
+sudo netstat -tulpn | grep :80
+
+# Obtener IP pública de la instancia
+curl -s ifconfig.me
+
+# Probar acceso desde internet (reemplaza con tu IP pública)
+curl -I http://$(curl -s ifconfig.me)
+```
+
+**Si el último comando falla o no responde**, el Security Group no está configurado correctamente.
+
+### 4.2 Configurar Firewall Local (UFW) - Opcional
 
 ```bash
 # Permitir SSH (CRÍTICO - no cerrar esta sesión hasta verificar)
@@ -101,6 +132,13 @@ sudo ufw enable
 
 # Verificar estado
 sudo ufw status
+```
+
+**NOTA**: Si UFW está bloqueando el puerto 80, deshabilítalo temporalmente para Certbot:
+```bash
+sudo ufw disable  # Solo si es necesario para Certbot
+# Después de obtener certificados, reactivarlo:
+sudo ufw enable
 ```
 
 ## Paso 5: Verificar Configuración DNS
@@ -170,6 +208,10 @@ docker compose -f docker-compose.prod.yml logs web | tail -20
 
 ```bash
 # Instalar dependencias de Composer (producción)
+# NOTA: Si aparece error de Git "dubious ownership", ejecutar primero:
+docker compose -f docker-compose.prod.yml exec web git config --global --add safe.directory /var/www/html
+
+# Luego ejecutar composer install
 docker compose -f docker-compose.prod.yml exec web composer install --no-dev --optimize-autoloader
 
 # Configurar permisos
@@ -189,17 +231,52 @@ sudo apt install -y certbot python3-certbot-nginx
 
 ### 8.2 Obtener certificados SSL
 
-**NOTA**: El dominio debe estar apuntando a la IP de EC2 antes de ejecutar este paso.
+**NOTA IMPORTANTE**: Antes de ejecutar este paso, asegúrate de:
+
+1. **El dominio apunta a la IP pública de EC2** (verificar con `dig multiserviciosdeoccidente.com`)
+2. **El Security Group de AWS permite tráfico entrante en puerto 80** desde 0.0.0.0/0 (ver Paso 4.1)
+3. **El puerto 80 es accesible desde internet** (verificar con `curl -I http://TU_IP_PUBLICA` desde otra máquina)
+4. **Nginx está corriendo y sirve el sitio** (verificar con `docker compose -f docker-compose.prod.yml ps nginx`)
+
+**Método 1: Usando modo standalone (requiere detener Nginx)**
 
 ```bash
-# Detener nginx temporalmente para usar certbot en modo standalone
+# 1. Verificar qué está usando el puerto 80
+sudo lsof -i :80
+# o
+sudo netstat -tulpn | grep :80
+
+# 2. Detener todos los servicios que usen el puerto 80
 docker compose -f docker-compose.prod.yml stop nginx
 
-# Obtener certificados
+# Si hay nginx del sistema corriendo:
+sudo systemctl stop nginx 2>/dev/null || true
+
+# Si hay apache corriendo:
+sudo systemctl stop apache2 2>/dev/null || true
+
+# 3. Verificar que el puerto 80 esté libre
+sudo lsof -i :80
+# No debe mostrar nada (o solo mostrar certbot después de iniciarlo)
+
+# 4. Obtener certificados
 sudo certbot certonly --standalone -d multiserviciosdeoccidente.com -d www.multiserviciosdeoccidente.com
 
-# Reiniciar nginx
+# 5. Reiniciar nginx
 docker compose -f docker-compose.prod.yml start nginx
+```
+
+**Método 2: Usando plugin webroot (NO requiere detener Nginx) - RECOMENDADO**
+
+```bash
+# 1. Crear directorio para el desafío de Certbot
+sudo mkdir -p /var/www/certbot
+
+# 2. Obtener certificados usando webroot (Nginx debe estar corriendo)
+sudo certbot certonly --webroot -w /var/www/certbot -d multiserviciosdeoccidente.com -d www.multiserviciosdeoccidente.com
+
+# NOTA: Este método requiere que Nginx esté configurado para servir el directorio /var/www/certbot
+# Si no funciona, usar el Método 1
 ```
 
 ### 8.3 Configurar certificados en Docker
@@ -435,8 +512,33 @@ docker compose -f docker-compose.prod.yml exec db mysql -u root -p -e "SHOW DATA
 
 ### El contenedor web está en estado "Restarting":
 ```bash
-# Ver logs del contenedor web
-docker compose -f docker-compose.prod.yml logs web
+# Ver logs del contenedor web (últimas 50 líneas)
+docker compose -f docker-compose.prod.yml logs web | tail -50
+
+# Error común: "exec /usr/local/bin/docker-entrypoint.sh: no such file or directory"
+# CAUSA: El script usa #!/bin/bash pero Alpine Linux no tiene bash instalado
+# SOLUCIÓN: Cambiar el shebang a #!/bin/sh en docker-entrypoint-prod.sh
+
+# 1. Verificar que docker-entrypoint-prod.sh existe en el servidor
+ls -la docker-entrypoint-prod.sh
+
+# 2. Verificar el shebang del archivo (debe ser #!/bin/sh, NO #!/bin/bash)
+head -1 docker-entrypoint-prod.sh
+
+# 3. Si muestra #!/bin/bash, actualizar el repositorio y hacer pull
+git pull origin main  # o master
+
+# 4. Verificar que el cambio se aplicó
+head -1 docker-entrypoint-prod.sh
+
+# 5. Reconstruir la imagen SIN cache para asegurar que se aplica el cambio
+docker compose -f docker-compose.prod.yml build --no-cache web
+
+# 6. Reiniciar el contenedor
+docker compose -f docker-compose.prod.yml up -d web
+
+# 7. Verificar que el contenedor está corriendo
+docker compose -f docker-compose.prod.yml ps web
 
 # Verificar que el archivo .env existe y tiene MYSQL_ROOT_PASSWORD
 cat .env | grep MYSQL_ROOT_PASSWORD
@@ -445,10 +547,11 @@ cat .env | grep MYSQL_ROOT_PASSWORD
 docker compose -f docker-compose.prod.yml ps db
 
 # Ver logs de la base de datos
-docker compose -f docker-compose.prod.yml logs db
+docker compose -f docker-compose.prod.yml logs db | tail -30
 
 # Si el problema persiste, verificar que mysql-client esté instalado en el contenedor
-docker compose -f docker-compose.prod.yml exec web mysqladmin --version
+# (Solo si puedes acceder al contenedor)
+docker compose -f docker-compose.prod.yml exec web mysqladmin --version 2>&1 || echo "No se puede acceder al contenedor"
 ```
 
 ### Problemas con variables de entorno:
@@ -460,5 +563,132 @@ ls -la .env
 docker compose -f docker-compose.prod.yml exec web env | grep MYSQL
 
 # Si falta el archivo .env, crearlo (ver Paso 3.1)
+```
+
+### Error "No space left on device" durante el build:
+
+Este error ocurre cuando el servidor no tiene suficiente espacio en disco. Sigue estos pasos:
+
+#### 1. Verificar espacio en disco:
+```bash
+# Ver uso de espacio en disco
+df -h
+
+# Ver uso detallado de directorios
+du -sh /* 2>/dev/null | sort -hr | head -10
+
+# Ver uso de espacio de Docker
+docker system df
+```
+
+#### 2. Limpiar espacio de Docker (RECOMENDADO primero):
+
+```bash
+# Ver qué ocupa espacio en Docker
+docker system df -v
+
+# Limpiar contenedores detenidos, redes no usadas, imágenes huérfanas y caché de build
+docker system prune -a --volumes
+
+# Si necesitas más espacio, eliminar todas las imágenes no usadas (CUIDADO: esto elimina todas las imágenes que no están en uso)
+docker image prune -a
+
+# Eliminar volúmenes no usados (CUIDADO: esto elimina volúmenes no asociados a contenedores)
+docker volume prune
+
+# Limpiar caché de build de Docker (puede liberar mucho espacio)
+docker builder prune -a
+```
+
+#### 3. Limpiar espacio del sistema:
+
+```bash
+# Limpiar caché de paquetes APT
+sudo apt clean
+sudo apt autoremove -y
+
+# Limpiar logs del sistema (logs antiguos)
+sudo journalctl --vacuum-time=7d  # Elimina logs de más de 7 días
+sudo journalctl --vacuum-size=100M  # O mantener solo 100MB de logs
+
+# Buscar archivos grandes para eliminar manualmente
+find / -type f -size +100M 2>/dev/null | head -20
+```
+
+#### 4. Limpiar espacio específico del proyecto:
+
+```bash
+# Verificar backups antiguos
+ls -lh /opt/tienda-online/backup_*.sql 2>/dev/null
+
+# Eliminar backups antiguos (más de 7 días)
+find /opt/tienda-online -name "backup_*.sql" -mtime +7 -delete
+
+# Limpiar logs de Docker del proyecto
+docker compose -f docker-compose.prod.yml logs --no-log-prefix 2>&1 | head -100 > /dev/null
+```
+
+#### 5. Después de limpiar, reconstruir:
+
+```bash
+# Verificar espacio disponible después de limpiar
+df -h /
+
+# Si hay suficiente espacio (al menos 2-3GB libres), reconstruir
+cd /opt/tienda-online
+docker compose -f docker-compose.prod.yml build web
+
+# Si el build aún falla, reconstruir sin caché pero después de limpiar más
+docker compose -f docker-compose.prod.yml build --no-cache web
+```
+
+#### 6. Si el problema persiste - Aumentar espacio en AWS EC2:
+
+Si después de limpiar aún no hay suficiente espacio, necesitarás aumentar el volumen EBS de la instancia EC2:
+
+1. **En AWS Console:**
+   - EC2 → Volumes → Seleccionar el volumen de la instancia
+   - Actions → Modify Volume
+   - Aumentar el tamaño (recomendado: mínimo 20GB para producción)
+   - Esperar a que complete la modificación
+
+2. **En el servidor (después de aumentar el volumen):**
+```bash
+# Verificar el nuevo tamaño
+lsblk
+
+# Extender la partición (si es necesario, según tu sistema)
+sudo growpart /dev/xvda1 1  # Ajustar según tu dispositivo
+sudo resize2fs /dev/xvda1   # Para ext4
+
+# Verificar el nuevo espacio
+df -h
+```
+
+#### Script rápido para limpiar espacio:
+
+```bash
+#!/bin/bash
+# Script para limpiar espacio en disco
+
+echo "=== Verificando espacio actual ==="
+df -h /
+
+echo "=== Limpiando Docker ==="
+docker system prune -a -f --volumes
+docker builder prune -a -f
+
+echo "=== Limpiando sistema ==="
+sudo apt clean
+sudo apt autoremove -y
+
+echo "=== Limpiando logs antiguos ==="
+sudo journalctl --vacuum-time=3d
+
+echo "=== Eliminando backups antiguos ==="
+find /opt/tienda-online -name "backup_*.sql" -mtime +7 -delete 2>/dev/null
+
+echo "=== Espacio disponible después de limpiar ==="
+df -h /
 ```
 
