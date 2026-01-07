@@ -15,6 +15,16 @@ $config = [
         'request' => [
             'cookieValidationKey' => 'your-cookie-validation-key-change-this-in-production',
             'csrfParam' => '_csrf-tienda-online',
+            // Configuración para HTTPS detrás de proxy
+            'trustedHosts' => [
+                'multiserviciosdeoccidente.com',
+                'www.multiserviciosdeoccidente.com',
+            ],
+            'secureHeaders' => [
+                'X-Forwarded-Proto',
+                'X-Forwarded-For',
+                'X-Forwarded-Host',
+            ],
         ],
         'cache' => [
             'class' => 'yii\caching\FileCache',
