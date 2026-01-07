@@ -6,6 +6,21 @@ chmod -R 777 /var/www/html/runtime 2>/dev/null || true
 chmod -R 777 /var/www/html/web/uploads 2>/dev/null || true
 chmod -R 777 /var/www/html/web/assets 2>/dev/null || true
 
+# Configurar PHP-FPM para pasar variables de entorno a PHP
+# Esto es crítico para que getenv() funcione correctamente en PHP-FPM
+if [ -f /usr/local/etc/php-fpm.d/www.conf ]; then
+    # Verificar si clear_env ya está configurado
+    if ! grep -q "^clear_env" /usr/local/etc/php-fpm.d/www.conf; then
+        # Agregar clear_env = no si no existe
+        sed -i '/\[www\]/a clear_env = no' /usr/local/etc/php-fpm.d/www.conf
+        echo "Configurado clear_env = no en PHP-FPM"
+    elif grep -q "^clear_env = yes" /usr/local/etc/php-fpm.d/www.conf; then
+        # Cambiar clear_env = yes a clear_env = no
+        sed -i 's/^clear_env = yes/clear_env = no/' /usr/local/etc/php-fpm.d/www.conf
+        echo "Cambiado clear_env a no en PHP-FPM"
+    fi
+fi
+
 # Esperar a que MySQL esté listo (solo si MYSQL_ROOT_PASSWORD está definido)
 if [ -n "${MYSQL_ROOT_PASSWORD}" ]; then
     echo "Esperando a que MySQL esté disponible..."
