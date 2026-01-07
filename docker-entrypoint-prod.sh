@@ -9,16 +9,35 @@ chmod -R 777 /var/www/html/web/assets 2>/dev/null || true
 # Configurar PHP-FPM para pasar variables de entorno a PHP
 # Esto es crítico para que getenv() funcione correctamente en PHP-FPM
 if [ -f /usr/local/etc/php-fpm.d/www.conf ]; then
-    # Verificar si clear_env ya está configurado
+    # Configurar clear_env = no
     if ! grep -q "^clear_env" /usr/local/etc/php-fpm.d/www.conf; then
-        # Agregar clear_env = no si no existe
         sed -i '/\[www\]/a clear_env = no' /usr/local/etc/php-fpm.d/www.conf
         echo "Configurado clear_env = no en PHP-FPM"
     elif grep -q "^clear_env = yes" /usr/local/etc/php-fpm.d/www.conf; then
-        # Cambiar clear_env = yes a clear_env = no
         sed -i 's/^clear_env = yes/clear_env = no/' /usr/local/etc/php-fpm.d/www.conf
         echo "Cambiado clear_env a no en PHP-FPM"
     fi
+    
+    # Configurar variables de entorno explícitamente usando un bloque temporal
+    # Eliminar configuraciones anteriores de estas variables si existen
+    sed -i '/^env\[MYSQL_HOST\]/d' /usr/local/etc/php-fpm.d/www.conf
+    sed -i '/^env\[MYSQL_DATABASE\]/d' /usr/local/etc/php-fpm.d/www.conf
+    sed -i '/^env\[MYSQL_USER\]/d' /usr/local/etc/php-fpm.d/www.conf
+    sed -i '/^env\[MYSQL_PASSWORD\]/d' /usr/local/etc/php-fpm.d/www.conf
+    sed -i '/^env\[MYSQL_ROOT_PASSWORD\]/d' /usr/local/etc/php-fpm.d/www.conf
+    
+    # Crear un archivo temporal con las variables expandidas
+    {
+        echo ""
+        echo "; Variables de entorno MySQL configuradas automáticamente"
+        [ -n "${MYSQL_HOST}" ] && echo "env[MYSQL_HOST] = ${MYSQL_HOST}"
+        [ -n "${MYSQL_DATABASE}" ] && echo "env[MYSQL_DATABASE] = ${MYSQL_DATABASE}"
+        [ -n "${MYSQL_USER}" ] && echo "env[MYSQL_USER] = ${MYSQL_USER}"
+        [ -n "${MYSQL_PASSWORD}" ] && echo "env[MYSQL_PASSWORD] = ${MYSQL_PASSWORD}"
+        [ -n "${MYSQL_ROOT_PASSWORD}" ] && echo "env[MYSQL_ROOT_PASSWORD] = ${MYSQL_ROOT_PASSWORD}"
+    } >> /usr/local/etc/php-fpm.d/www.conf
+    
+    echo "Variables de entorno configuradas en PHP-FPM"
 fi
 
 # Esperar a que MySQL esté listo (solo si MYSQL_ROOT_PASSWORD está definido)
