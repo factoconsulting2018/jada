@@ -4,6 +4,7 @@ set -e
 # Establecer permisos básicos
 chmod -R 777 /var/www/html/runtime 2>/dev/null || true
 chmod -R 777 /var/www/html/web/uploads 2>/dev/null || true
+chmod -R 777 /var/www/html/web/assets 2>/dev/null || true
 
 # Esperar a que MySQL esté listo (solo si MYSQL_ROOT_PASSWORD está definido)
 if [ -n "${MYSQL_ROOT_PASSWORD}" ]; then

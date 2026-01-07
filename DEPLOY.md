@@ -692,3 +692,90 @@ echo "=== Espacio disponible después de limpiar ==="
 df -h /
 ```
 
+## Apéndice: Cambiar Contraseñas de MySQL
+
+### Cambiar contraseña de root de MySQL
+
+**IMPORTANTE**: Si la base de datos ya tiene datos, usa el Método 1. Si es una instalación nueva, usa el Método 2.
+
+**Método 1: Cambiar contraseña en base de datos existente (sin perder datos)**
+
+```bash
+# 1. Cambiar la contraseña dentro del contenedor MySQL
+docker compose -f docker-compose.prod.yml exec db mysql -u root -p${MYSQL_ROOT_PASSWORD} << EOF
+ALTER USER 'root'@'%' IDENTIFIED BY 'TuNuevaContraseñaRoot123!';
+ALTER USER 'root'@'localhost' IDENTIFIED BY 'TuNuevaContraseñaRoot123!';
+FLUSH PRIVILEGES;
+EOF
+
+# 2. Verificar que el cambio funcionó
+docker compose -f docker-compose.prod.yml exec db mysql -u root -pTuNuevaContraseñaRoot123! -e "SELECT 'Contraseña cambiada exitosamente' AS resultado;"
+
+# 3. Actualizar el archivo .env con la nueva contraseña
+nano .env
+# Cambiar: MYSQL_ROOT_PASSWORD=contraseña_anterior
+# Por: MYSQL_ROOT_PASSWORD=TuNuevaContraseñaRoot123!
+
+# 4. Actualizar también la contraseña del usuario tienda_user (si es necesario)
+docker compose -f docker-compose.prod.yml exec db mysql -u root -pTuNuevaContraseñaRoot123! << EOF
+ALTER USER 'tienda_user'@'%' IDENTIFIED BY 'TuNuevaContraseñaUsuario123!';
+FLUSH PRIVILEGES;
+EOF
+
+# 5. Actualizar MYSQL_PASSWORD en el archivo .env
+nano .env
+# Cambiar: MYSQL_PASSWORD=contraseña_anterior
+# Por: MYSQL_PASSWORD=TuNuevaContraseñaUsuario123!
+
+# 6. Reiniciar contenedores para aplicar cambios
+docker compose -f docker-compose.prod.yml restart web db
+```
+
+**Método 2: Cambiar contraseña en instalación nueva (puede perder datos)**
+
+```bash
+# 1. Detener contenedores
+docker compose -f docker-compose.prod.yml down
+
+# 2. Eliminar volumen de base de datos (¡CUIDADO! Esto borra todos los datos)
+docker volume rm tienda-online_db_data_prod
+
+# 3. Editar .env con nuevas contraseñas
+nano .env
+# MYSQL_ROOT_PASSWORD=TuNuevaContraseñaRoot123!
+# MYSQL_PASSWORD=TuNuevaContraseñaUsuario123!
+
+# 4. Levantar contenedores (creará la BD con las nuevas contraseñas)
+docker compose -f docker-compose.prod.yml up -d
+
+# 5. Ejecutar migraciones nuevamente
+docker compose -f docker-compose.prod.yml exec web php yii migrate --interactive=0
+```
+
+**Método 3: Cambiar solo la contraseña del usuario tienda_user**
+
+```bash
+# 1. Cambiar contraseña del usuario
+docker compose -f docker-compose.prod.yml exec db mysql -u root -p${MYSQL_ROOT_PASSWORD} << EOF
+ALTER USER 'tienda_user'@'%' IDENTIFIED BY 'TuNuevaContraseñaUsuario123!';
+FLUSH PRIVILEGES;
+EOF
+
+# 2. Actualizar .env
+nano .env
+# MYSQL_PASSWORD=TuNuevaContraseñaUsuario123!
+
+# 3. Reiniciar contenedor web
+docker compose -f docker-compose.prod.yml restart web
+```
+
+### Verificar usuarios y permisos de MySQL
+
+```bash
+# Ver todos los usuarios
+docker compose -f docker-compose.prod.yml exec db mysql -u root -p${MYSQL_ROOT_PASSWORD} -e "SELECT user, host FROM mysql.user;"
+
+# Ver permisos del usuario tienda_user
+docker compose -f docker-compose.prod.yml exec db mysql -u root -p${MYSQL_ROOT_PASSWORD} -e "SHOW GRANTS FOR 'tienda_user'@'%';"
+```
+
