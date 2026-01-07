@@ -2,50 +2,61 @@
 
 // Función helper para obtener variables de entorno (compatible con PHP-FPM)
 function getEnvVar($name, $default = null) {
-    // Intentar $_ENV primero (más confiable en PHP-FPM)
-    if (isset($_ENV[$name]) && $_ENV[$name] !== '') {
-        return $_ENV[$name];
-    }
-    // Intentar $_SERVER (también confiable en PHP-FPM)
-    if (isset($_SERVER[$name]) && $_SERVER[$name] !== '') {
-        return $_SERVER[$name];
-    }
-    // Intentar getenv() (puede no funcionar en PHP-FPM)
-    $value = getenv($name);
-    if ($value !== false && $value !== '') {
-        return $value;
-    }
-    // Intentar leer del archivo .env si existe (último recurso)
+    // Cargar archivo .env primero (más confiable en PHP-FPM que no pasa variables)
     static $envFile = null;
     if ($envFile === null) {
         $envPath = dirname(__DIR__) . '/.env';
+        $envFile = [];
         if (file_exists($envPath) && is_readable($envPath)) {
-            $envFile = [];
-            $lines = @file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-            if ($lines !== false) {
+            $content = @file_get_contents($envPath);
+            if ($content !== false) {
+                $lines = explode("\n", $content);
                 foreach ($lines as $line) {
                     $line = trim($line);
+                    // Saltar líneas vacías y comentarios
                     if (empty($line) || strpos($line, '#') === 0) {
-                        continue; // Saltar líneas vacías y comentarios
+                        continue;
                     }
-                    if (strpos($line, '=') !== false) {
-                        list($key, $val) = explode('=', $line, 2);
-                        $key = trim($key);
-                        $val = trim($val, " \t\n\r\0\x0B\"'");
-                        if (!empty($key) && !empty($val)) {
+                    // Buscar el primer = que separa clave de valor
+                    $pos = strpos($line, '=');
+                    if ($pos !== false && $pos > 0) {
+                        $key = trim(substr($line, 0, $pos));
+                        $val = trim(substr($line, $pos + 1));
+                        // Remover comillas si existen
+                        if ((substr($val, 0, 1) === '"' && substr($val, -1) === '"') ||
+                            (substr($val, 0, 1) === "'" && substr($val, -1) === "'")) {
+                            $val = substr($val, 1, -1);
+                        }
+                        if (!empty($key) && $val !== '') {
                             $envFile[$key] = $val;
                         }
                     }
                 }
             }
         }
-        if ($envFile === null) {
-            $envFile = false; // Marcar como no disponible
-        }
     }
-    if ($envFile !== false && isset($envFile[$name]) && $envFile[$name] !== '') {
+    
+    // Prioridad 1: Archivo .env (más confiable en PHP-FPM)
+    if (isset($envFile[$name]) && $envFile[$name] !== '') {
         return $envFile[$name];
     }
+    
+    // Prioridad 2: $_ENV (confiable en PHP-FPM si clear_env = no)
+    if (isset($_ENV[$name]) && $_ENV[$name] !== '') {
+        return $_ENV[$name];
+    }
+    
+    // Prioridad 3: $_SERVER (confiable en PHP-FPM si clear_env = no)
+    if (isset($_SERVER[$name]) && $_SERVER[$name] !== '') {
+        return $_SERVER[$name];
+    }
+    
+    // Prioridad 4: getenv() (puede no funcionar en PHP-FPM)
+    $value = getenv($name);
+    if ($value !== false && $value !== '') {
+        return $value;
+    }
+    
     // Retornar valor por defecto
     return $default;
 }
