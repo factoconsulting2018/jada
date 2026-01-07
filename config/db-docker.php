@@ -2,36 +2,44 @@
 
 // Función helper para obtener variables de entorno (compatible con PHP-FPM)
 function getEnvVar($name, $default = null) {
-    // Intentar getenv() primero
-    $value = getenv($name);
-    if ($value !== false && $value !== '') {
-        return $value;
-    }
-    // Si no está disponible, intentar $_ENV
+    // Intentar $_ENV primero (más confiable en PHP-FPM)
     if (isset($_ENV[$name]) && $_ENV[$name] !== '') {
         return $_ENV[$name];
     }
-    // Si no está disponible, intentar $_SERVER
+    // Intentar $_SERVER (también confiable en PHP-FPM)
     if (isset($_SERVER[$name]) && $_SERVER[$name] !== '') {
         return $_SERVER[$name];
+    }
+    // Intentar getenv() (puede no funcionar en PHP-FPM)
+    $value = getenv($name);
+    if ($value !== false && $value !== '') {
+        return $value;
     }
     // Intentar leer del archivo .env si existe (último recurso)
     static $envFile = null;
     if ($envFile === null) {
         $envPath = dirname(__DIR__) . '/.env';
-        if (file_exists($envPath)) {
+        if (file_exists($envPath) && is_readable($envPath)) {
             $envFile = [];
-            $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-            foreach ($lines as $line) {
-                if (strpos(trim($line), '#') === 0) {
-                    continue; // Saltar comentarios
-                }
-                if (strpos($line, '=') !== false) {
-                    list($key, $val) = explode('=', $line, 2);
-                    $envFile[trim($key)] = trim($val, " \t\n\r\0\x0B\"'");
+            $lines = @file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            if ($lines !== false) {
+                foreach ($lines as $line) {
+                    $line = trim($line);
+                    if (empty($line) || strpos($line, '#') === 0) {
+                        continue; // Saltar líneas vacías y comentarios
+                    }
+                    if (strpos($line, '=') !== false) {
+                        list($key, $val) = explode('=', $line, 2);
+                        $key = trim($key);
+                        $val = trim($val, " \t\n\r\0\x0B\"'");
+                        if (!empty($key) && !empty($val)) {
+                            $envFile[$key] = $val;
+                        }
+                    }
                 }
             }
-        } else {
+        }
+        if ($envFile === null) {
             $envFile = false; // Marcar como no disponible
         }
     }
